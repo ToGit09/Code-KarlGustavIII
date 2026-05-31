@@ -48,9 +48,6 @@
 #define I2C_BUS Wire1     // IRL-Ring on Wire1
 #define I2C_SPEED 1000000 // 1 MHz
 
-// Definieren ob die Pixy per I2C oder SPI angesprochen wird
-#define PixyI2C
-// #define PixySPI
 #endif
 
 // Internal

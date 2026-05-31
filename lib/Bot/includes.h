@@ -12,14 +12,6 @@
 #include <SRF08.h>             // Ultraschallsensor Library
 #include <INA.h>               // INA219 Library
 
-// #define PixySPI
-#define PixyI2C
-#ifdef PixySPI
-#include <Pixy2SPI.h> // Pixy2SPI
-#endif
-#ifdef PixyI2C
-#include <Pixy2I2C.h> // Pixy2I2C
-#endif
 
 #ifndef PARAMETER_H
 #include "Data/Parameter.h"

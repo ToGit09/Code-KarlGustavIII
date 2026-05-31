@@ -22,9 +22,6 @@ public:
 
     // verarbeitet die ausgelesenen US Sensoren
     us_sensor_event US_Calc(us_sensor_event us, compass_sensor_event compass);
-
-    // verarbeitet die ausgelesenen Kamera Werte
-    camera_event Pixy_Calc(void);
 };
 
 // Liest die Sensoren aus
@@ -52,12 +49,6 @@ public:
 
     // liest die schalter und Taster aus
     switches_event Switches(void);
-
-    // liest Pixycam aus
-    camera_event Pixy(void);
-
-    // Kalibriert Pixy
-    void calibratePixy(void);
 
     // Kalibriert IR-Ring
     void calibrateIR(ir_sensor_event IR_Data);

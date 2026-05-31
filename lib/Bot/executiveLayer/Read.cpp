@@ -78,46 +78,6 @@ us_sensor_event CodeCalculate::US_Calc(us_sensor_event us, compass_sensor_event 
     return us;
 }
 
-camera_event CodeCalculate::Pixy_Calc(void)
-{
-    // Homesign = eigenes Tor
-    // Enemsign = gegnerisches Tor
-    // Ballsign = Ball (EVtl bald)
-
-    // Konzept:
-    // alles was über einem bestimmten y wert ist sofort dumpen (Kalibrierungsfarben)
-    // Center ausrechenen
-    // Center x abweichung berechnen und nutzen
-    // Output : GaolIs = -1 (Links), 0(Mitte), 1 (Rechts)
-    // Output : Goaldistance = Höhe / Faktor X // Mapping (0, maxHeight, 100, 0)
-
-    camera_event event;
-
-    // EnemyGoal
-    if (!(PixyY[EnemSign] > PixyYDumpValue))
-    {
-        Pixy_GoalDist = map(PixyY[EnemSign], PixyMinHeight, PixyMaxHeight, 100, 0); // Distance to goal
-
-        //---
-
-        int pixyXoffset = PixyX[EnemSign] + (PixyW[EnemSign] / 2);                                // X offset
-        pixyXoffset = map(pixyXoffset, 0, PixyCamWidth, -1 * PixyCamWidth / 2, PixyCamWidth / 2); // Mapping to -160 to 160
-
-        // pixyXoffset : Abweichung zur Mitte
-
-        if (pixyXoffset < -PixyCamWidth / PixyDivider)
-            event.goal_heading = -1; // Links
-        else if (pixyXoffset > PixyCamWidth / PixyDivider)
-            event.goal_heading = 1; // Rechts
-        else
-            event.goal_heading = 0; // Mitte
-    }
-
-    event.goal_visible = PixyS[EnemSign];
-
-    return event;
-}
-
 // Code Read
 
 ir_sensor_event CodeRead::IR(compass_sensor_event compass, us_sensor_event us, bool readRawData)
@@ -333,60 +293,6 @@ switches_event CodeRead::Switches(void)
     event.SWI6 = false;
 
     return event;
-}
-
-camera_event CodeRead::Pixy(void)
-{
-    blocks = pixy.ccc.getBlocks(); // Number of found blocks
-
-    for (int i = 0; i < 3; i++) // gespeicherte Blöcke zurücksetzen
-    {
-        PixyS[i] = false;
-        PixyX[i] = 0;
-        PixyY[i] = 0;
-        PixyW[i] = 0;
-        PixyH[i] = 0;
-    }
-
-    if (blocks) // wenn Blöcke gefunden wurden
-    {
-        for (int j = 0; j < blocks; j++)
-        {
-
-            if (true) // Debug ausgaben
-            {
-                Serial.print("Block ");
-                Serial.print(j);
-                Serial.print(" : ");
-                pixy.ccc.blocks[j].print();
-            }
-
-            int sign = pixy.ccc.blocks[j].m_signature;
-            if (sign < 2)
-            {
-                PixyS[sign] = true;
-                PixyX[sign] = pixy.ccc.blocks[j].m_x;
-                PixyY[sign] = pixy.ccc.blocks[j].m_y;
-                PixyW[sign] = pixy.ccc.blocks[j].m_width;
-                PixyH[sign] = pixy.ccc.blocks[j].m_height;
-            }
-        }
-    }
-
-    return Pixy_Calc();
-}
-
-void CodeRead::calibratePixy(void)
-{
-    Pixy();
-    if (PixyS[0])
-    {
-        HomeSign = 0;
-    }
-    else if (PixyS[1])
-    {
-        HomeSign = 1;
-    }
 }
 
 void CodeRead::calibrateIR(ir_sensor_event IR_Data)

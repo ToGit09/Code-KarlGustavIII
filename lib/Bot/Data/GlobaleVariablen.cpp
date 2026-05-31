@@ -22,14 +22,6 @@ ESCC DRIBBLER;
 // Device_handle ir_ring_handle = {i2c1, I2C_target{0x0A}};
 // IR_ring ir_ring(ir_ring_handle);
 
-// Pixy
-#ifdef PixyI2C
-Pixy2I2C pixy;
-#endif
-#ifdef PixySPI
-Pixy2SPI pixy;
-#endif
-
 float sqrt3;
 
 int US_raw[4]; // Ausgelesene Ultraschallwerte

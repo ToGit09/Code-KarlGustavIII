@@ -21,14 +21,6 @@ extern SRF08Manager sonar;
 
 extern ESCC DRIBBLER;
 
-// Pixy
-#ifdef PixyI2C
-extern Pixy2I2C pixy;
-#endif
-#ifdef PixySPI
-extern Pixy2SPI pixy;
-#endif
-
 extern float sqrt3;
 
 extern int US_raw[4] ; // Ausgelesene Ultraschallwerte
