@@ -51,7 +51,7 @@ Die mathematische Herleitung:
 
 2. Die Projektion des Bewegungsvektors [x, y] auf diese Einheitsvektoren ergibt die Motorgeschwindigkeiten.
 
-### 3.2 PID-Regelung
+### 2.2 PID-Regelung
 
 Der PID-Regler für die Orientierungskontrolle:
 
@@ -101,7 +101,7 @@ Mathematische Details:
    - Dämpft Oszillationen
    - D_Multiplier typisch 15.0
 
-### 2.4 Ultraschall-Navigation
+### 2.3 Ultraschall-Navigation
 
 Die Positionsbestimmung verwendet trigonometrische Korrekturen:
 
