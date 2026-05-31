@@ -43,6 +43,8 @@
 // Motor 3/4 = leer
 /******************************************************************************************/
 
+// Zwei Hauptklassen: CodeRobot -> Zentrale Verwaltung des roboters, CodeTactics -> Alle Taktiken und Bewegungsfunktionen
+
 /** Setup *********************************************************************************/
 #include <Arduino.h>
 #include <Bot.h> // Bot
@@ -58,6 +60,12 @@ public:
     elapsedMillis LOPTimer; // Lack of progress Timer
     int stdSpeed = 50;
 
+    /**
+     * @brief Verteidigung im Eigenen Tor
+     * @param IR_Data IR-Sensordaten
+     * @param move Bewegungsbefehl
+     * @return Aktualisierter Bewegungsbefehl
+     */
     movement_event defend(ir_sensor_event IR_Data, movement_event move = movement_event())
     {
         if (IR_Data.Orbit_direction > 0) // links
@@ -69,15 +77,11 @@ public:
     }
 
     /**
-     * @brief Ball anfahren wenn der Ball gesehen wird
-     * @param IR_Data: IR sensor Event
-     * @param Cornerspeed: Wenn true, wird die Geschwindigkeit an die Corner speed angepasst
-     * @param move: Movement Event
-     * @return  Movement Event
-     *
-     * Wenn Cornerspeed == true, wird die Geschwindigkeit an die Corner speed angepasst.
-     * Wenn der Ball gesehen wird, wird nach dem Ball gefahren.
-     * Wenn der Ball nicht gesehen wird, wird nach Pixy gefahren.
+     * @brief Fährt den Ball an und berücksichtigt dabei Ultraschall-Abstände.
+     * @param IR_Data IR-Sensordaten
+     * @param US_Data Ultraschall-Sensordaten
+     * @param move Bewegungsbefehl
+     * @return Aktualisierter Bewegungsbefehl
      */
     movement_event ballanfahrt(ir_sensor_event IR_Data, us_sensor_event US_Data, movement_event move = movement_event())
     {
@@ -130,18 +134,20 @@ public:
     }
 
     /**
-     * Corner movement function
+     * @brief Bewegungsfunktion für Eckensituationen.
      *
-     * @param isItLeftCorner: Is it the left corner?
-     * @param cornerTimerState: The state of the corner timer
-     * @param US: The US sensor event
-     * @param move: The movement event to be modified
-     * @return The modified movement event
+     * @param isItLeftCorner Gibt an, ob es die linke Ecke ist.
+     * @param US Ultraschall-Sensordaten.
+     * @param comp Kompass-Sensordaten.
+     * @param move Bewegungs-Event, das angepasst wird.
+     * @param ir IR-Sensordaten.
+     * @return movement_event Das angepasste Bewegungs-Event.
      *
-     * This function returns a movement event that makes the robot turn left or right depending on the value of isItLeftCorner.
-     * If cornerTimerState is greater than or equal to 2000, the speed of the robot will be set to 90.
-     * If cornerTimerState is greater than or equal to 4000, the speed of the robot will be set to 100.
-     * If the distance in front of the robot is greater than 10, the angle will be set to 0 and the robot will kick the ball.
+     * Die Funktion steuert das Verhalten in der Ecke:
+     * - Ist der Frontabstand (US.dist_f) größer als 30, fährt der Roboter geradeaus
+     *   (Winkel 0, AngleOfAttack 0) mit Standardgeschwindigkeit und löst einen Kick aus.
+     * - Andernfalls dreht der Roboter mit Winkel ±115 (abhängig von der Ecke),
+     *   ebenfalls mit Standardgeschwindigkeit und AngleOfAttack 0.
      */
     movement_event corner(bool isItLeftCorner, us_sensor_event US, compass_sensor_event comp, movement_event move = movement_event(), ir_sensor_event ir = ir_sensor_event())
     {
@@ -159,15 +165,14 @@ public:
     }
 
     /**
-     * @brief Ball anfahren wenn der Ball gesehen wird
-     * @param US: Der US sensor Event
-     * @param Compass: Der Kompass Event
-     * @param cam: Der Kamera Event
-     * @param move: Der Movement Event
-     * @return Der Movement Event
+     * @brief Ball anfahren, wenn der Ball gesehen wird
+     * @param US Der US-Sensor-Event
+     * @param Compass Der Kompass-Event
+     * @param move Der Movement-Event
+     * @return Der angepasste Movement-Event
      *
-     * Wenn PixyDrive == true, wird nach Pixy gefahren.
-     * Wenn PixyDrive == false, wird nach Kompass und US gefahren.
+     * Die Funktion richtet den Roboter anhand des seitlichen Ballabstands aus.
+     * Bei mittiger Position wird ein Kick ausgelöst.
      */
     movement_event toranfahrt(us_sensor_event US, compass_sensor_event Compass, movement_event move = movement_event())
     {
@@ -319,15 +324,7 @@ public:
         INA.init();
         //----------------------------------------------------------------------------------------//
 
-        //-Pixy2----------------------------------------------------------------------------------//
-        // pixy.init();
-        // pixy.setLamp(0, 0);   // turn off the lamp
-        // pixy.setLED(0, 0, 0); // turn off the LED
-        // pixy.setCameraBrightness(91);
-        //----------------------------------------------------------------------------------------//
-
         //-US-------------------------------------------------------------------------------------//
-
         sensorVorne.setEMAAlpha(0.25f);
         sensorHinten.setEMAAlpha(0.25f);
         sensorLinks.setEMAAlpha(0.25f);
@@ -347,16 +344,6 @@ public:
         sensorHinten.startRanging();
         sensorLinks.startRanging();
         sensorRechts.startRanging();
-
-        /*sonar.addSensor(&sensorVorne);
-        sonar.addSensor(&sensorHinten);
-        sonar.addSensor(&sensorLinks);
-        sonar.addSensor(&sensorRechts);*/
-
-        // sonar.begin(Wire1);
-        delay(100);
-        // sonar.update();
-
         //----------------------------------------------------------------------------------------//
 
         //-LDR------------------------------------------------------------------------------------//
@@ -377,6 +364,7 @@ public:
         Tactics.action.setRGB(0, 0, 0, 255);
         Tactics.action.setRGB(1, 255, 0, 0);
         Tactics.action.setRGB(2, 0, 0, 255);
+
         for (int i = 3; i < 19; i++)
             Tactics.action.setRGB(i, 255, 255, 0);
         Tactics.action.renderRGBs();
@@ -385,12 +373,14 @@ public:
         {
             delay(30);
         }
+
         for (int i = 3; i < 19; i++)
             Tactics.action.setRGB(i, 0, 0, 0);
         Tactics.action.renderRGBs();
 
         int i = 3;
         int li = 3;
+
         while (INA.Voltage_DR() < 4)
         {
 
@@ -410,27 +400,21 @@ public:
         }
 
         for (int i = 0; i < 19; i++)
-        {
             Tactics.action.setRGB(i, 0, 255, 255);
-        }
         Tactics.action.renderRGBs();
-        delay(100);
 
-        // Button Pressed
+        delay(100);
 
         DRIBBLER.init_Power();
 
         for (int i = 0; i < 19; i++)
-        {
             Tactics.action.setRGB(i, 0, 255, 0);
-        }
         Tactics.action.renderRGBs();
+
         delay(2500);
 
         for (int i = 0; i < 19; i++)
-        {
             Tactics.action.setRGB(i, 0, 0, 0);
-        }
         Tactics.action.renderRGBs();
 
         //----------------------------------------------------------------------------------------//
@@ -480,22 +464,16 @@ public:
         Compass = Read.Compass();
 
         if (ReadTimer >= 100)
-        {
-            switches = Read.Switches();
+            switches = Read.Switches(),
             ReadTimer = 0;
-        }
 
         if (ReadTimer2 >= 10)
-        {
-            US = Read.US(Compass);
+            US = Read.US(Compass),
             ReadTimer2 = 0;
-        }
 
         if (ReadTimer3 >= 20)
-        {
-            LDR = Read.LDR();
+            LDR = Read.LDR(),
             ReadTimer3 = 0;
-        }
 
         IR = Read.IR(Compass, US, switches.BTN4); // IR Sensoren auslesen, abhängig von Kompass und US Werten (für ballanfahrt), und BTN4 (für IR Kalibrierung)
 
@@ -515,6 +493,7 @@ public:
 
             Tactics.action.kicker_reset();
             update();
+            Tactics.action.kicker_reset(); // für präzisere Kicks
 
             switches.MainSwitch = digitalRead(MAINSWITCH_PORT);
 
@@ -654,7 +633,7 @@ public:
             DRIBBLER.set(0);
 
         move.currentCompassAngle = Compass.orbitDirection;
-        Tactics.action.move(move);
+        // Tactics.action.move(move);
 
         Tactics.printGameLogikStatus(hasBall, amIinanCorner, IshoouldDefend, avoidObstacle);
     }
