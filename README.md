@@ -1,6 +1,6 @@
 # Karl-Gustav III
 
-Kurzüberblick für den Einstieg in den Code.
+Kurzüberblick für den Einstieg in den Code
 
 ## Projektstruktur
 
