@@ -1,0 +1,35 @@
+# Test- und Dokumentationsverzeichnis
+
+## Inhalt
+
+### Doku/
+Technische Dokumentation und Anleitungen:
+- **Struktur_Neu.txt**: Neue Projektstruktur
+- **_doks/**: Dokumentationsdateien (Markdown, Text)
+- **BLDC-MotorTrieber/**: BLDC-Motor-Konfiguration und Ideas
+- **Board/**: Boardspezifische Informationen und Pin-Zuordnungen
+- **TeensyPinOut/**: Teensy 4.0 Pin-Konfiguration
+
+### snippets/
+Code-Snippets und Referenzimplementierungen:
+- Alte Ballanfahrt und Gamelogik
+- Code-Beispiele für Display, Action und Systemkonfiguration
+- Portal-Belegung (Port-Mapping)
+
+### Simulation/
+Simulationsprogramme für Algorithm-Tests:
+- **BallAnfahrtSimulation.py**: Simulation der Ballnäherung
+- **Test.py**: Allgemeine Tests
+
+### ablage/
+Archivierte Test-Code und Debug-Implementierungen:
+- Address-Changer für US-Sensor
+- System-Checks
+- Alte KI-Implementierungen
+- Debug-Modi für BLDC und LDR
+
+### source/
+Alternative und historische Quellcode-Versionen zur Referenz.
+
+### versions/
+Versionsgeschichte der Karl-Gustav III Firmware.

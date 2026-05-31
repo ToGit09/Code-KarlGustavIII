@@ -1,0 +1,92 @@
+
+Stand 23.2.2026
+
+Roboter.system.Switches.Mainswitch :
+                Tactics.action.setRGB(0, StatusR, StatusG, StatusB); // Start lever State
+
+                // manual Input Handling
+                if (switches.BTN1)
+                    Read.KompassCliValue = Compass.orbitDirection + Read.KompassCliValue, Read.calibrateLDR();
+
+                if (switches.BTN2)
+                    Tactics.action.kick();
+
+                if (switches.BTN3)
+                    Read.calibrateLDR();
+
+                if (switches.BTN4)
+                    ;
+                else
+                    ;
+
+                // Switches
+                if (switches.SWI1) // Speeds
+                    Tactics.stdSpeed = 80;
+                else
+                    Tactics.stdSpeed = 94;
+
+                if (switches.SWI2)
+                    ;
+                else
+                    ;
+
+                if (switches.SWI3)
+                    KickerExtendTime = 50;
+                else
+                    KickerExtendTime = 15;
+
+                // Fahr logik
+
+                // analogWrite(33, 240);
+                // Serial.println("DRIBBLER");
+
+                gameLogik(); // Fahr logik
+
+                // --- Debug stuff -------------------------------------------------------------------------//
+
+                // move.speed = 30;
+
+                // move.AngleOfAttack = 0;
+
+                /*Serial.print("Move: ");
+                Serial.print(move.speed);
+                Serial.print(" : ");
+                Serial.print(move.angle);
+                Serial.print(" : ");
+                Serial.print(move.AngleOfAttack);
+                Serial.print(" : ");*/
+
+                /*Serial.print(" ");
+                Serial.print(US.dist_r);
+                Serial.print(" : ");
+                Serial.print(US.dist_l);
+                Serial.print(" : ");
+                Serial.print(US.dist_f);
+                Serial.print(" : ");
+                Serial.print(US.dist_b);
+                Serial.print(" ; ");*/
+
+                // Serial.println(Compass.orbitDirection);
+
+                /* move.currentCompassAngle = Compass.orbitDirection;
+                move.angle = IR.ballanfahrt;
+                move.AngleOfAttack = 0; // IR.Orbit_direction;
+                move.speed = Tactics.stdSpeed;
+
+                Tactics.action.move(move); */
+
+                /* Serial.print("LDR: ");
+                Serial.print(LDR.ballda);
+                Serial.print(" : ");
+                Serial.println(LDR.value); */
+
+                // analogWrite(motoren[1].PWM, 200);
+
+                // Serial.println(IR.direction);
+
+                /* Serial.print(" US : ");
+                Serial.print(US.dist_f);
+                Serial.print(" : ");
+                Serial.println(US.dist_b);
+                Serial.print(" x: ");
+                Serial.print(US.offsetx); */

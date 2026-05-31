@@ -1,0 +1,171 @@
+Karl-Gustav III v1.1.1 - Dokumentation
+Letzte Aktualisierung: 26.02.2026
+
+1. Überblick
+Der Code steuert einen autonomen Roboterfußball-Roboter. Er nutzt verschiedene Sensoren (IR-Ring, Ultraschall, BNO055 Kompass, Lichtschranke) und Aktoren (3 omnidirektionale Motoren, Dribbler, Kicker) um autonom einen Ball zu finden, zu kontrollieren und Tore zu schießen.
+
+2. Hauptkomponenten
+
+2.1 Hardware-Setup
+- 3 Hauptmotoren (omnidirektional im 120° Winkel angeordnet)
+  * Motor 0: Hinten (180°)
+  * Motor 1: Links vorne (-60°)
+  * Motor 2: Rechts vorne (60°)
+- 1 Dribblermotor (vorne)
+- 8 IR-Sensoren (gleichmäßig im 45°-Winkel im Kreis angeordnet)
+  * Sensor 0: 0° (vorne)
+  * Sensor 1: 45° (vorne rechts)
+  * Sensor 2: 90° (rechts)
+  * usw.
+- 4 Ultraschallsensoren (vorne, hinten, links, rechts)
+- BNO055 Kompasssensor (absolute Orientierung)
+- Lichtschranke für Ballerkennung
+- RGB-LEDs für Statusanzeige
+- Verschiedene Schalter und Taster für Steuerung
+
+2.2 Mathematische Grundlagen
+
+2.2.1 Omnidirektionale Bewegung
+Die Bewegung basiert auf der Vektorzerlegung der gewünschten Fahrtrichtung:
+- Eingabe: Winkel α (in Grad), Geschwindigkeit v
+- Umrechnung in kartesische Koordinaten:
+  * x = v * cos(α)
+  * y = v * sin(α)
+- Motorgeschwindigkeiten (mit PID-Korrektur 'turn'):
+  * Motor0 = x + turn
+  * Motor1 = (-0.5x - √3/2*y) + turn
+  * Motor2 = (-0.5x + √3/2*y) + turn
+
+Diese Formeln basieren auf der 120°-Anordnung der Motoren und ermöglichen eine Bewegung in jede Richtung.
+
+2.2.2 IR-Ballortung
+Die Ballposition wird durch Vektoraddition der IR-Sensorwerte berechnet:
+- Für jeden Sensor i (0-7):
+  * x_i = IR_values[i] * sin(45° * i)
+  * y_i = IR_values[i] * cos(45° * i)
+- Gesamtposition:
+  * x_ball = Σ x_i
+  * y_ball = Σ y_i
+- Ballrichtung = atan2(y_ball, x_ball) * 180/π
+
+2.2.3 PID-Regelung
+Der PID-Regler für die Orientierung arbeitet mit drei Komponenten:
+1. Proportional (P):
+   - P = (OrbitDirection - angleOfAttack) * P_Multiplier
+   - Direkte Reaktion auf den aktuellen Fehler
+   
+2. Integral (I):
+   - I = I + (OrbitDirection - angleOfAttack)
+   - I = I * I_Multiplier
+   - Begrenzt auf [-105, 105]
+   - Wird bei kleinen Fehlern (<12°) auf 0 gesetzt
+   
+3. Differential (D):
+   - D = (aktuellerFehler - letzterFehler) * D_Multiplier
+   - Dämpft Oszillationen
+
+Gesamt-PID = P + I + D
+
+Typische Werte:
+- P_Multiplier = 4.0
+- I_Multiplier = 1.4
+- D_Multiplier = 15.0
+
+2.2.4 Ultraschall-Navigation
+Die Position relativ zum Spielfeld wird berechnet durch:
+- Offset X = (US_Rechts - US_Links) / 2
+- Offset Y = (US_Vorne - US_Hinten) / 2
+- Korrektur durch Kompasswinkel:
+  * US_Rechts = US_Rechts * cos(OrbitDirection)
+  * US_Links = US_Links * cos(OrbitDirection)
+  * US_Vorne = US_Vorne * sin(OrbitDirection)
+  * US_Hinten = US_Hinten * sin(OrbitDirection)
+
+3. Hauptfunktionen
+
+3.1 Initialisierung (initialize)
+- Konfiguriert alle Pins
+- Initialisiert Kommunikationsprotokolle (I2C, SPI)
+- Kalibriert Sensoren
+- Setzt Grundeinstellungen
+
+3.2 Update-Zyklus (update)
+- Wird alle 5ms ausgeführt
+- Liest Sensoren aus
+- Berechnet PID-Regelung
+- Aktualisiert Status
+
+3.3 System-Loop (system)
+- Läuft alle 10ms
+- Speichert Sensorwerte
+- Handhabt Benutzerinteraktion
+- Steuert Debug-Funktionen
+
+3.4 Spiellogik (game)
+- Implementiert Spielstrategien:
+  * LOP (Lack of Progress) Behandlung
+  * Ballanfahrt
+  * Toranfahrt
+  * Homing (Rückkehr ins Tor)
+
+4. Sensordatenverarbeitung
+
+4.1 IR-Sensoren
+- 8 Sensoren im Kreis
+- Berechnet:
+  * Ballrichtung (IR_Direction)
+  * Ballabstand (IR_Distance)
+  * Ballsektor (IR_Heading)
+
+4.2 Ultraschall
+- 4 Sensoren (vorne, hinten, links, rechts)
+- Berechnet Position relativ zu Wänden
+- Ermöglicht präzise Navigation
+
+4.3 Kompass
+- Verwendet BNO055
+- Ermöglicht absolute Orientierung
+- Basis für PID-Regelung
+
+5. Bewegungssteuerung
+
+5.1 Omnidirektionale Bewegung
+- 3 Motoren im 120° Winkel
+- Erlaubt Bewegung in alle Richtungen
+- PID-geregelte Orientierung
+
+5.2 Dribbler
+- Kontrolliert Ballbesitz
+- Verschiedene Modi (anziehen/abstoßen)
+
+5.3 Kicker
+- Zeitgesteuerte Schussmechanik
+- Sicherheitsverzögerungen
+
+6. Taktische Funktionen
+
+6.1 Ballanfahrt
+- Verschiedene Anfahrtsstrategien je nach Ballposition
+- Optimierte Bewegungskurven
+
+6.2 Toranfahrt
+- Zielgerichtete Bewegung zum Tor
+- Automatische Schussauslösung
+
+6.3 Homing
+- Rückkehr ins eigene Tor
+- Verwendung von Ultraschall zur Orientierung
+
+7. Sicherheitsfunktionen
+- Motorbegrenzungen
+- Kickersperre
+- Notfall-Stopp
+- Überwachung der Schleifenzeiten
+
+8. Debug-Funktionen
+- LED-Statusanzeige
+- Serielle Ausgabe
+- Verschiedene Testmodi
+- Schalter für unterschiedliche Funktionen
+
+Diese Dokumentation beschreibt die Hauptfunktionen des Karl-Gustav III Roboters. Der Code ist modular aufgebaut und ermöglicht eine einfache Erweiterung und Anpassung der Funktionen.

@@ -1,0 +1,21 @@
+Um den MCF8316C-Q1-Treiber erfolgreich in Betrieb zu nehmen, müssen Sie ihn über Register konfigurieren, da er zwar „Code-frei“ ist, aber auf die spezifischen Parameter Ihres Motors abgestimmt werden muss.
+Hier ist die schrittweise Anleitung, wie das geht und was genau konfiguriert werden muss:
+1. Die zwei essenziellen Parameter
+Damit der Motor überhaupt im geschlossenen Regelkreis (Closed Loop) dreht, sind laut Hersteller zwei Parameter zwingend erforderlich:
+1. Maximale Motordrehzahl (Maximum Motor Speed): Festgelegt im Register MAX_SPEED.
+2. Strombegrenzung für die Drehmoment-Regelung (Current Limit for torque PI loop): Festgelegt im Register ILIMIT.
+2. Motorparameter extrahieren (Der einfachste Weg: MPET)
+Anstatt Motorwerte manuell einzugeben, besitzt der Chip das Motor Parameter Extraction Tool (MPET). Dieses Tool misst die physikalischen Eigenschaften Ihres Motors automatisch im Offline-Zustand.
+• Was gemessen wird: Wicklungswiderstand (MOTOR_RES), Induktivität (MOTOR_IND) und die Gegen-EMK-Konstante (MOTOR_BEMF_CONST).
+• Vorteil: Die Messergebnisse können direkt in die sogenannten Shadow-Register geschrieben werden, um die Regelparameter für den Stromregelkreis (CURR_LOOP_KP und CURR_LOOP_KI) automatisch zu berechnen.
+3. Konfigurationsschritte und wichtige Register-Blöcke
+Die Konfiguration erfolgt üblicherweise über die I2C-Schnittstelle oder die MOTORSTUDIO GUI. Folgende Bereiche müssen Sie einstellen:
+• Geschwindigkeits-Eingangsmodus: Legen Sie im Register SPEED_MODE fest, wie der Treiber Befehle empfängt (z. B. Analogspannung, PWM-Signal, I2C-Befehl oder Frequenz).
+• Start-up-Verhalten: Wählen Sie über MTR_STARTUP die Startmethode (z. B. Ausrichtung/Align, IPD für schnellen Start ohne Rückwärtsdrehung oder Slow First Cycle).
+• Regelkreis-Einstellungen (Closed Loop): Hier stellen Sie Beschleunigungsraten (CL_ACC), PWM-Frequenz (PWM_FREQ_OUT) und die PI-Regler-Werte für Drehzahl und Strom ein.
+• Schutzfunktionen: Konfigurieren Sie Grenzwerte für Überspannung (VOVP), Unterspannung, Überstrom und Blockierschutz (MTR_LCK_MODE), um Hardware-Schäden zu vermeiden.
+4. Speicherung im EEPROM
+Sobald Sie die optimalen Einstellungen gefunden haben, müssen diese im nicht-flüchtigen EEPROM gespeichert werden.
+• Die Konfiguration wird zuerst in die Shadow-Register (Adressen 0x80 bis 0xAE) geschrieben.
+• Stand-alone-Betrieb: Nach der Programmierung des EEPROMs kann der Treiber eigenständig arbeiten, ohne dass eine dauerhafte I2C-Verbindung zum Mikrocontroller nötig ist.
+Zusammenfassend: Verwenden Sie am besten das MPET-Tool innerhalb der MOTORSTUDIO Software, um die Grundparameter Ihres Motors zu ermitteln, stellen Sie die maximale Drehzahl und das Stromlimit ein und speichern Sie alles im EEPROM.

@@ -1,0 +1,29 @@
+
+Stand 25.2.2026
+
+Robot.gameLogik ganz am ENde
+
+        return; // SICHERUNG
+
+        /*         if (amIinanLOP)
+                    Tactics.resolveLOP(move);
+                else if (PixySeestheGoalandBothastheBall) // Wenn die Pixy dass Tor sieht und der Ball da ist
+                    Tactics.toranfahrt(true, US, Compass, cam, move);
+                else if (hasBall) // LDR und IR Sensor sehen den Ball
+                    Tactics.toranfahrt(false, US, Compass, cam, move);
+                else if (IRSeestheBall) // IR Sensor sieht den Ball
+                {
+                    GoalTargetAngel = 0;  // Toranfahrt zurücksetzen
+                    Tactics.LOPTimer = 0; // LOP Timer zuruecksetzen
+                    Tactics.ballanfahrt(IR, false);
+                }
+                else // IR Sensor sieht keinen Ball
+                    Tactics.homing(US);
+
+                move.currentCompassAngle = Compass.orbitDirection;
+                Tactics.action.move(move); */
+
+                ganz am Anfang:
+                        // bool amIinanLOP = (Tactics.LOPTimer >= LOP_TimerLimit); // Wenn der Ball nicht erkannt wird nach bestimmter Zeit versuchen durch bewegung den Ball zu erkennen
+        // bool PixySeestheGoalandBothastheBall = (cam.goal_visible && hasBall);
+        // bool IRSeestheBall = (IR.reliable);

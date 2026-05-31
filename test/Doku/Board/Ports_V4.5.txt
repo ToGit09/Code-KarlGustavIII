@@ -1,0 +1,38 @@
+/** Port Belegung v4.5 ********************************************************************/
+// Pin       Funktion          Verfahren      Angeschlossen
+// 0         MOT1_IN1          GPIO           Motor 1 Richtung
+// 1         MOT1_IN2          GPIO           Motor 1 Richtung
+// 2         MOT2_IN1          GPIO           Motor 2 Richtung
+// 3         MOT2_IN2          GPIO           Motor 2 Richtung
+// 4         MOT1_PWM          PWM            Motor 1 Geschwindigkeit
+// 5         MOT2_PWM          PWM            Motor 2 Geschwindigkeit
+// 6         MOT3_PWM          PWM            Motor 3 Geschwindigkeit
+// 7         MOT3_IN1          GPIO           Motor 3 Richtung
+// 8         MOT3_IN2          GPIO           Motor 3 Richtung
+// 9         MOT4_PWM          PWM            Motor 4 Geschwindigkeit
+// 10        START_SWITCH      GPIO           Start/Stopp Switch (MAIN SWITCH)
+// 11        MOSI              SPI            SPI-Intercon
+// 12        MISO              SPI            SPI-Intercon
+// 13        SCK               SPI            SPI-Intercon
+// 14        TNS_TX/PIXY_RX    Serial         Kamera
+// 15        TNS_RX/PIXY_TX    Serial         Kamera
+// 16        I2C_SCL_3V3       I2C            I2C 3V3 (Portexpander Switches)
+// 17        I2C_SDA_3V3       I2C            I2C 3V3
+// 18        Kicker            GPIO           Kicker trigger
+// 19        SPI_DIO0          SPI/GPIO       SPI-Intercon
+// 20        RGB_DATA_3V3      GPIO           RGB LEDs
+// 21        SPI_DIO3          SPI/GPIO       SPI-Intercon
+// 22        SPI_DIO4          SPI/GPIO       SPI-Intercon
+// 23        LIGHT_BARRIER     GPIO           LDR Input
+// --------------------------------------------------------------------------------------- //
+// 24        UART1_TNS_TX      UART           Kommunikation mit Teensy via UART1
+// 25        UART1_TNS_RX      UART           Kommunikation mit Teensy via UART1
+// 26        MOT4_IN1          GPIO           Motor 4 Richtung
+// 27        EMPTY             -              LEER / evtl Dribbler DIR
+// 24        UART2_TNS_TX      UART           Kommunikation mit Teensy via UART2
+// 25        UART2_TNS_RX      UART           Kommunikation mit Teensy via UART2
+// 30        SPI_DIO2          SPI/GPIO       SPI-Intercon
+// 31        SPI_DIO1          SPI/GPIO       SPI-Intercon
+// 32        MOT4_IN2          GPIO           Motor 4 Richtung
+// 33        BLDC_DRIBBLER_PWM PWM            Brushless Dribbler Geschwindigkeit
+// -------------------------------------------------------------------------------------- //

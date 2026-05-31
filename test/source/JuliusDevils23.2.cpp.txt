@@ -1,0 +1,1163 @@
+/** Port Belegung ********************************************************************************/
+
+// Pin       Funktion          Verfahren      Angeschlossen
+//----------------------------------------------------------------------------
+// 0         DISPLAY_IRQ       Interrupt      Display
+// 2         DISPLAY_LITE      PWM            Display (Light)
+// 3         START_SWITCH      GPIO           Schalter
+// 4         PWM0              PWM            Motor0
+// 5         PWM1              PWM            Motor1
+// 6         PWM2              PWM            Motor2
+// 7         DISPLAY_TFT_CS    GPIO           Display
+// 8         DISPLAY_TFT_DC    GPIO           Display
+// 9         PWM3              PWM            Dribbler
+// 10        ADC_CS            GPIO           ADC
+// 11        MOSI              SPI            ADC, Display
+// 12        MISO              SPI            ADC, Display
+// 13        SCK               SPI            ADC, Display
+// 14        TNS_TX/PIXY_RX    UART3          Kamera
+// 15        TNS_RX/PIXY_TX    UART3          Kamera
+// 16        SPE-Data          JU_Ser         SP-Expander
+// 17        SPE-Clock         JU_Ser         SP-Expander
+// 18        SDA_3V3           I2C            Portexpander(0x20,0x21),BN0055
+// 19        SCL_3V3           I2C            Portexpander(0x20,0x21),BN0055
+// 20        RGB_DATA_3V3      I2C            RGB LEDs
+// 21        LIGHT_BARRIER     I2C            Lichtschranke
+// 22        BAT_VOLTAGE       ADC            Batteriespannung
+// 23        LED0              GPIO           LED
+//---------------------------------------------------------------------------------
+
+/** TODO's  ********************************************************************************/
+// NR 1 : (ca. Z.774) Ins eigene Tor fahren (homeing)
+
+/** Setup  ********************************************************************************/
+
+#if true // Lib. include
+#include <Arduino.h>
+#include <Wire.h>              // for port expanders (Motor direction control, switches, Kicker)
+#include <Adafruit_NeoPixel.h> // for RGB LEDs
+#include <SPI.h>               // for ADC, Display and touch controller
+#include <Adafruit_BNO055.h>   // compass sensor
+#include <elapsedMillis.h>
+#include <XcpSxIMaster.h>
+#endif
+
+/** XCP Disable (uncoment to activate) **************************************************/
+// #define db_XCP_USB
+#define db_XCP_BL
+
+#if true // Parameter
+int32_t db_schussStrength = 255;
+int db_ProgrammSpeed = 25; // Programm Samplezeit in Millisek.
+uint32_t db_schussLength = 300;
+float db_Ball_Anfarts_Faktor = 1.22;                                 // zwischen 1 - 1.4 (1 == direkt auf den Ball ohne Kurve / >1 kurven Größe)// 1.22
+float db_Addition_Ball = 10;                                         // Addition zur Ball Anfahrt  20
+float db_AbstandSchwelle = 50;                                       // ab welcher entfernung zum ball der Roboter eine kurve einleitet
+float db_Ball_AD_Kutt = 25;                                          // Additions Ende (Winkel) 25
+float db_HIGH_Speed = 100;                                           // wert zwischen 0-100 (im HIGH-Speed-Mode)
+float db_LOW_Speed = 60;                                             // wert zwischen 0-100 (im LOW-Speed-Mode)
+float db_Motor_Freqency = 200;                                       // PWM Freqenz in Hz
+float db_Gewicht[8] = {0, 315, 270, 225, 180, 135, 90, 45};          // IR anordnung in Grad (gemessen zu Fahrtrichtung) {0,45,90,135,180,225,270,315}
+int db_IR_Min[8] = {20, 20, 20, 20, 20, 16, 20, 20};                 // minimale Signalstärke der IR's (digital = LOW)
+int db_IR_Max[8] = {3300, 3000, 3500, 3400, 3400, 3300, 3100, 3300}; // maximale Signalstärke der IR's (digital = HIGH)
+int db_BCP_Delay = 150;                                              // Delay zwischen den Datenbits des BidirectionalCommunicationProtocols in Microsekunden
+int db_LDR_Schwelle = 400;
+bool db_Serial_EN = true; // true -> off
+bool db_IR_Cal = true;    // true -> off
+float db_LED_Brightness = 8;
+
+// PID
+float db_Kp = 4;
+float db_Ki = 1.1;
+float db_Kd = 15;
+float db_PID_Stand_Multiplier = 70;
+float db_PID_Multiplier = 0.026;
+float db_i_limitMax = 105;
+float db_i_limitMin = -105;
+float db_i_multiplier = 0.45;
+float db_PID_Integral_threshhold = 12;
+float db_sw_str = 50;
+int db_sw_cooldown;
+int db_sw_cooldown_time = 20;
+#endif
+
+#if true // Lib. start
+IntervalTimer myTimer;
+#ifdef db_XCP_BL
+XcpSxIMaster xcpMaster_bl = XcpSxIMaster(115200, 3);
+#endif
+#ifdef db_XCP_USB
+XcpSxIMaster xcpMaster_usb = XcpSxIMaster(115200, 0);
+#endif
+elapsedMillis SchussTimer;
+Adafruit_NeoPixel RGB_LEDs = Adafruit_NeoPixel(10, 20, NEO_GRB + NEO_KHZ800);
+Adafruit_BNO055 bno = Adafruit_BNO055(55);
+#endif
+
+#if true // Compiling Data_Stamp
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+  PROGMEM const char kXcpStationId[kXcpStationIdLength] = "Bodenseekoalas1_" __DATE__ " " __TIME__;
+
+#ifdef __cplusplus
+}
+#endif
+#endif
+
+#if true // Variablen
+float db_Orbit_Dir2;
+bool db_homeing;
+float db_MainSpeed;
+float db_sqrt3;
+String db_valueString;
+float db_gyro_comp;
+float db_euler_comp;
+float db_comp_comp;
+String db_befehl;
+float db_value;
+float db_out;
+bool db_Action_Bool = false;
+uint8_t db_gyro;
+uint8_t db_accel;
+uint8_t db_mag;
+int db_last_time;
+bool db_Display_Enable = false;
+int db_Position;
+int db_Offset2;
+uint8_t db_system2;
+bool db_Hinderniss = false;
+int db_OffsetC;
+int db_test;
+float db_Orbit_Dir;
+float db_Error;
+int db_Offset;
+bool db_LDR_Aktive;
+volatile unsigned int db_Timing_Error_IN;
+volatile unsigned int db_Timing_Error_OUT;
+volatile unsigned int db_Timing_Error;
+volatile unsigned int db_Timing_Numbercopy;
+float db_Dir0;
+float db_Dir1;
+float db_Dir2;
+int db_G_Dir;
+int db_list1[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+bool db_Check;
+bool db_Nord_Cal = false;
+unsigned int db_Timing_Memory;
+int db_Switch1;
+int db_Switch3;
+int db_Switch2;
+float db_Ball_Angle = 0;
+int db_Comp_Offset = 0;
+int db_BigSchrift_hight = 2; // Schrift größe Überschrift
+int db_Schrift_hight = 2;    // Schrift größe normal Schrift
+int db_RichtungPID;
+bool db_once_Disp = false;
+float db_newmil2;
+float db_newmil = 0;
+bool db_Swi_Start;
+int db_BTN_Mode;
+int db_Ball_Anfahrts_Calc;
+byte db_Zahl_OUT;
+byte db_Motor0_N;
+byte db_Motor1_N;
+byte db_Motor2_N;
+byte db_Motor3_N;
+float Debug_Diff;
+float db_Ball_dir_calc_x;
+float db_Ball_dir_calc_y;
+int db_motor0_U;
+int db_motor1_U;
+int db_motor2_U;
+int db_motor3_U;
+byte db_last_Byte;
+float db_Velocity[3];
+float db_Velocity_D[3]; // Velocity + und - zum Debbugen
+float db_IR_Val[8];     // Messwerte vom ADC, 0...1020 in 4er Schritten, Minimalwert
+float db_Ball_dir_calc;
+float db_Ball_dir_relativ;
+float db_Ball_dir_dist;
+float db_x_dir;
+float db_y_dir;
+float db_TurnFormal;
+float db_CheckSumme;
+int db_Switches;
+int db_SW[7];
+int db_US[4];
+int db_Seeker;       // IR Position aktuell
+int db_LDR_Schranke; // Lichtschranke zur Ballerkennung 1 oder 0
+int db_G_Direction;  // Tor Richtung ( Goal Direction )
+int db_angles[3] = {0, 120, 240};
+float db_motor_speeds[3];
+float db_omega_i;
+float db_alpha;
+volatile unsigned int db_Timing_Number;
+bool db_Ultra_V;
+bool db_Ultra_L;
+bool db_Ultra_R;
+bool db_Ultra_H;
+int db_lastM1 = 0;
+int db_lastM2 = 0;
+int db_lastM3 = 0;
+bool db_Start;
+int db_last_LDR = 100000000;
+int db_timer;
+float db_esum; // I-Regler Integrall
+float db_e;    // P-Regler Fehler
+float db_ealt; // D-Regler Abweichung
+int db_Nord;
+int db_Start_Modus;
+float db_PID_Turn;
+bool db_IR_Signal;                          // Seeker Signal überprüfung
+bool db_IR_Fehler;                          // Seeker Fehler überprüfung ( nur wenn alle Sensoren Anschlagen == true)
+double db_Setpoint1, db_Input1, db_Output1; // PID variables
+float Speed;
+#endif
+
+class LightC
+{
+public:
+  void RGB(int rot, int blau, int grün, int x)
+  {
+    RGB_LEDs.setBrightness(db_LED_Brightness);
+    RGB_LEDs.setPixelColor(x, RGB_LEDs.Color(rot, grün, blau));
+    RGB_LEDs.show();
+  }
+};
+
+/** Lowlevel Code  ********************************************************************************/
+class CalculateC
+{
+private:
+  LightC Light;
+
+public:
+  void LDR()
+  {
+    db_LDR_Schranke = analogRead(21);
+    if (db_LDR_Schranke < db_last_LDR)
+    {
+      db_last_LDR = db_LDR_Schranke;
+    }
+    if (db_LDR_Schranke > db_LDR_Schwelle)
+    {
+      db_LDR_Aktive = true;
+      Light.RGB(0, 0, 255, 9);
+    }
+    else
+    {
+      db_LDR_Aktive = false;
+      Light.RGB(255, 0, 0, 9);
+    }
+  }
+
+  void Ball_Anfahrt()
+  {
+    if (db_CheckSumme > db_AbstandSchwelle)
+    {
+      if (db_Ball_dir_calc < -4 && db_Ball_dir_calc > -db_Ball_AD_Kutt)
+      {
+        db_Ball_Anfahrts_Calc = db_Ball_dir_calc * db_Ball_Anfarts_Faktor;
+      }
+      else if (db_Ball_dir_calc > 4 && db_Ball_dir_calc < db_Ball_AD_Kutt)
+      {
+        db_Ball_Anfahrts_Calc = db_Ball_dir_calc * db_Ball_Anfarts_Faktor;
+      }
+      else if (db_Ball_dir_calc < -4)
+      {
+        db_Ball_Anfahrts_Calc = db_Ball_dir_calc * db_Ball_Anfarts_Faktor - db_Addition_Ball;
+      }
+      else if (db_Ball_dir_calc > 4)
+      {
+        db_Ball_Anfahrts_Calc = db_Ball_dir_calc * db_Ball_Anfarts_Faktor + db_Addition_Ball;
+      }
+      else
+      {
+        db_Ball_Anfahrts_Calc = 0;
+      }
+    }
+    /*if entfernung > 60 :
+          if degree2>83 and degree2<160 :
+              heading=180
+          elif degree2<=83 and  degree2>0:
+              heading=degree2*1.8
+          elif degree2<-83 and  degree2>-160:
+              heading=180
+          elif degree2>=-83 and  degree2<0:
+              heading=degree2*1.8
+          elif degree2<=-160 :
+              heading=135
+          elif degree2>160 :
+              heading=-135
+      else :
+          heading=degree2*/
+    else
+    {
+      db_Ball_Anfahrts_Calc = db_Ball_dir_calc;
+    }
+    db_Ball_Anfahrts_Calc = db_Ball_Anfahrts_Calc * (-1);
+  }
+
+  void Ball_Position()
+  {
+
+    db_CheckSumme = 0;
+    for (int i = 0; i < 8; i++)
+    {
+      db_CheckSumme = db_IR_Val[i] + db_CheckSumme;
+    }
+
+    db_x_dir = 0;
+    db_y_dir = 0;
+
+    for (int i = 0; i < 8; i++)
+    {
+      db_x_dir = db_x_dir + db_IR_Val[i] * cos(db_Gewicht[i] * PI / 180);
+      db_y_dir = db_y_dir + db_IR_Val[i] * sin(db_Gewicht[i] * PI / 180);
+    }
+    db_Ball_dir_calc_x = db_x_dir;
+    db_Ball_dir_calc_y = db_y_dir;
+    db_Ball_dir_dist = (db_CheckSumme * (-1)) + 100;
+    db_Ball_dir_calc = (atan2f(db_y_dir, db_x_dir) * (55));
+
+    if (db_Ball_dir_calc <= 0)
+    {
+      Light.RGB(0, 255 + (db_Ball_dir_calc * -1.41), (db_Ball_dir_calc * 1.41), 7);
+    }
+    else if (db_Ball_dir_calc > 0)
+    {
+      Light.RGB((db_Ball_dir_calc * 1.41), 0, 255 + (db_Ball_dir_calc * -1.41), 7);
+    }
+
+    db_Ball_dir_relativ = db_Ball_dir_calc - db_Orbit_Dir;
+  }
+
+  float PID(float Offdrive)
+  {
+
+    db_Setpoint1 = Offdrive;
+
+    db_Input1 = db_Orbit_Dir;
+
+    db_e = db_Input1 - db_Setpoint1;
+
+    db_esum = db_e + db_esum;
+
+    if (db_esum > db_i_limitMax)
+    {
+      db_esum = db_i_limitMax;
+    }
+    else if (db_esum < db_i_limitMin)
+    {
+      db_esum = db_i_limitMin;
+    }
+
+    if (db_e > -(db_PID_Integral_threshhold) && db_e < db_PID_Integral_threshhold)
+    {
+      db_esum = 0;
+    }
+
+    Debug_Diff = (db_e - db_ealt);
+
+    db_out = ((db_Kp / 10) * db_e) + ((db_Ki / 10) * db_esum * db_i_multiplier) + ((db_Kd / 10) * (db_e - db_ealt));
+    db_ealt = db_e;
+
+    return -db_out;
+  }
+};
+
+class ActionC : private CalculateC
+{
+
+public:
+  int Calibrate()
+  {
+    db_Offset = 0;
+
+    imu::Vector<3> eulerCal = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+    db_Offset = eulerCal.x();
+
+    return db_Offset;
+  }
+
+  void PID_Einstellen()
+  {
+    if (Serial.available() > 0)
+    {
+      db_befehl = Serial.readString(6);
+      Serial.readString(1);
+      db_valueString = Serial.readString(4);
+      db_value = db_valueString.toFloat();
+      if (db_befehl == "Pdb_value")
+      {
+        db_Kp = db_value;
+      }
+      if (db_befehl == "Idb_value")
+      {
+        db_Ki = db_value;
+      }
+      if (db_befehl == "Ddb_value")
+      {
+        db_Kd = db_value;
+      }
+      if (db_befehl == "Imulti")
+      {
+        db_i_multiplier = db_value;
+      }
+      if (db_befehl == "I_maxi")
+      {
+        db_i_limitMax = db_value;
+      }
+      if (db_befehl == "I_mini")
+      {
+        db_i_limitMin = db_value;
+      }
+      if (db_befehl == "Gmulti")
+      {
+        db_PID_Multiplier = db_value;
+      }
+      if (db_befehl == "Smulti")
+      {
+        db_PID_Stand_Multiplier = db_value;
+      }
+      if (db_befehl == "SendVa")
+      {
+        Serial.print(db_Velocity_D[0]);
+        Serial.print(" , ");
+        Serial.print(db_e);
+      }
+    }
+  }
+
+  void Debug_BL()
+  {
+    Serial3.print(">");
+    Serial3.print("Position: ");
+    Serial3.print(db_Position);
+    Serial3.print(" , ");
+    Serial3.print("Ball_Dir: ");
+    Serial3.print(db_Ball_dir_calc);
+    Serial3.print(" , ");
+    Serial3.print("Ball relativ: ");
+    Serial3.print(db_Ball_dir_relativ);
+    Serial3.print(" , ");
+    Serial3.print("Dir: ");
+    Serial3.print(db_Orbit_Dir);
+    Serial3.print(" , ");
+    Serial3.println();
+  }
+
+  void SchussLoop()
+  {
+    if (SchussTimer < db_schussLength)
+    {
+      Motor_Drive(3, false, db_schussStrength);
+    }
+    else
+    {
+      Motor_Drive(3, false, 0);
+    }
+  }
+
+  void Movement(float Degree2, float Speed_Percent, float TurnMoment)
+  {
+
+    Speed = Speed_Percent * 2.55;
+
+    db_TurnFormal = PID(TurnMoment) * db_PID_Multiplier;
+
+    float rad = Degree2 * PI / 180;
+    float CoorX = sin(rad) * 1;
+    float CoorY = cos(rad) * 1;
+
+    if (Speed == 0)
+    {
+      db_Velocity_D[0] = (db_TurnFormal * db_PID_Stand_Multiplier);
+      db_Velocity_D[1] = (db_TurnFormal * db_PID_Stand_Multiplier);
+      db_Velocity_D[2] = (db_TurnFormal * db_PID_Stand_Multiplier);
+    }
+    else
+    {
+      db_Velocity_D[0] = ((((-0.5 * CoorX) + (db_sqrt3 / 2 * CoorY))) + db_TurnFormal);
+      db_Velocity_D[1] = ((((-0.5 * CoorX) - (db_sqrt3 / 2 * CoorY))) + db_TurnFormal);
+      db_Velocity_D[2] = ((CoorX) + db_TurnFormal);
+    }
+
+    // Alle werte auf + setzen
+    if (db_Velocity_D[0] < 0)
+    {
+      db_Velocity[0] = db_Velocity_D[0] * -1;
+      db_Dir0 = 0;
+    }
+    else
+    {
+      db_Velocity[0] = db_Velocity_D[0];
+      db_Dir0 = 1;
+    }
+    if (db_Velocity_D[1] < 0)
+    {
+      db_Velocity[1] = db_Velocity_D[1] * -1;
+      db_Dir1 = 0;
+    }
+    else
+    {
+      db_Velocity[1] = db_Velocity_D[1];
+      db_Dir1 = 1;
+    }
+    if (db_Velocity_D[2] < 0)
+    {
+      db_Velocity[2] = db_Velocity_D[2] * -1;
+      db_Dir2 = 0;
+    }
+    else
+    {
+      db_Velocity[2] = db_Velocity_D[2];
+      db_Dir2 = 1;
+    }
+
+    // Werte Mappen auf "Speed"
+    if (Speed != 0)
+    {
+      if ((db_Velocity[0] >= db_Velocity[1]) && (db_Velocity[0] >= db_Velocity[2]))
+      {
+        db_Error = Speed / db_Velocity[0];
+        db_Velocity[0] = db_Velocity[0] * db_Error;
+        db_Velocity[1] = db_Velocity[1] * db_Error;
+        db_Velocity[2] = db_Velocity[2] * db_Error;
+      }
+      if ((db_Velocity[1] >= db_Velocity[0]) && (db_Velocity[1] >= db_Velocity[2]))
+      {
+        db_Error = Speed / db_Velocity[1];
+        db_Velocity[0] = db_Velocity[0] * db_Error;
+        db_Velocity[1] = db_Velocity[1] * db_Error;
+        db_Velocity[2] = db_Velocity[2] * db_Error;
+      }
+      if ((db_Velocity[2] >= db_Velocity[1]) && (db_Velocity[2] >= db_Velocity[0]))
+      {
+        db_Error = Speed / db_Velocity[2];
+        db_Velocity[0] = db_Velocity[0] * db_Error;
+        db_Velocity[1] = db_Velocity[1] * db_Error;
+        db_Velocity[2] = db_Velocity[2] * db_Error;
+      }
+    }
+
+    if (db_Dir0 == 1)
+    {
+      Motor_Drive(0, true, db_Velocity[0]);
+    }
+    else
+    {
+      Motor_Drive(0, false, (db_Velocity[0]));
+    }
+    if (db_Dir1 == 1)
+    {
+      Motor_Drive(1, true, db_Velocity[1]);
+    }
+    else
+    {
+      Motor_Drive(1, false, (db_Velocity[1]));
+    }
+    if (db_Dir2 == 1)
+    {
+      Motor_Drive(2, true, db_Velocity[2]);
+    }
+    else
+    {
+      Motor_Drive(2, false, (db_Velocity[2]));
+    }
+  }
+
+  void Stop()
+  {
+    Motor_Stop(0);
+    Motor_Stop(1);
+    Motor_Stop(2);
+  }
+
+  void Motor_Stop(int motor)
+  {
+
+    Wire.beginTransmission(0x21); // address second port expander
+    Wire.write(0x01);             // select output register
+    Wire.endTransmission(false);  // send restart instead of stop
+    Wire.requestFrom(0x21, 1);    // Start a read access and expect one byte
+    db_last_Byte = Wire.read();   // get current port state
+    Wire.endTransmission();
+
+    if ((motor == 0) || (db_motor0_U == 0))
+    {
+      db_Motor0_N = B00000011;
+      db_motor0_U = 0;
+    }
+
+    if ((motor == 1) || (db_motor1_U == 0))
+    {
+      db_Motor1_N = B00001100;
+      db_motor1_U = 0;
+    }
+
+    if ((motor == 2) || (db_motor2_U == 0))
+    {
+      db_Motor2_N = B00110000;
+      db_motor2_U = 0;
+    }
+
+    if ((motor == 3) || (db_motor3_U == 0))
+    {
+      db_Motor3_N = B11000000;
+      db_motor3_U = 0;
+    }
+
+    if (motor == 0)
+    {
+      analogWrite(4, 0);
+    }
+    if (motor == 1)
+    {
+      analogWrite(5, 0);
+    }
+    if (motor == 2)
+    {
+      analogWrite(6, 0);
+    }
+    if (motor == 3)
+    {
+      analogWrite(9, 0);
+    }
+
+    db_Zahl_OUT = db_Motor0_N | db_Motor1_N | db_Motor2_N | db_Motor3_N;
+    Wire.beginTransmission(0x21); // address second port expander
+    Wire.write(0x01);             // select output register
+    Wire.write(db_Zahl_OUT);      // update output ports Port_Seting
+    Wire.endTransmission();
+  }
+
+  void Motor_Drive(int motor, bool Richtung, float Speed)
+  {
+
+    Wire.beginTransmission(0x21); // address second port expander
+    Wire.write(0x01);             // select output register
+    Wire.endTransmission(false);  // send restart instead of stop
+    Wire.requestFrom(0x21, 1);    // Start a read access and expect one byte
+    db_last_Byte = Wire.read();   // get current port state
+    Wire.endTransmission();
+
+    if (((motor == 0) && (Richtung == true)) || (db_motor0_U == 1))
+    {
+      db_Motor0_N = B00000001;
+      db_motor0_U = 1;
+    }
+    if (((motor == 0) && (Richtung == false)) || (db_motor0_U == 2))
+    {
+      db_Motor0_N = B00000010;
+      db_motor0_U = 2;
+    }
+
+    if (((motor == 1) && (Richtung == true)) || (db_motor1_U == 1))
+    {
+      db_Motor1_N = B00000100;
+      db_motor1_U = 1;
+    }
+    if (((motor == 1) && (Richtung == false)) || (db_motor1_U == 2))
+    {
+      db_Motor1_N = B00001000;
+      db_motor1_U = 2;
+    }
+
+    if (((motor == 2) && (Richtung == true)) || (db_motor2_U == 1))
+    {
+      db_Motor2_N = B00010000;
+      db_motor2_U = 1;
+    }
+    if (((motor == 2) && (Richtung == false)) || (db_motor2_U == 2))
+    {
+      db_Motor2_N = B00100000;
+      db_motor2_U = 2;
+    }
+
+    if (((motor == 3) && (Richtung == true)) || (db_motor3_U == 1))
+    {
+      db_Motor3_N = B01000000;
+      db_motor3_U = 1;
+    }
+    if (((motor == 3) && (Richtung == false)) || (db_motor3_U == 2))
+    {
+      db_Motor3_N = B10000000;
+      db_motor3_U = 2;
+    }
+
+    if (motor == 0)
+    {
+      analogWrite(4, Speed);
+    }
+    if (motor == 1)
+    {
+      analogWrite(5, Speed);
+    }
+    if (motor == 2)
+    {
+      analogWrite(6, Speed);
+    }
+    if (motor == 3)
+    {
+      analogWrite(9, Speed);
+    }
+
+    db_Zahl_OUT = db_Motor0_N | db_Motor1_N | db_Motor2_N | db_Motor3_N;
+    Wire.beginTransmission(0x21); // address second port expander
+    Wire.write(0x01);             // select output register
+    Wire.write(db_Zahl_OUT);      // update output ports Port_Seting
+    Wire.endTransmission();
+  }
+
+  void Schuss()
+  {
+    SchussTimer = 0;
+  }
+};
+
+class ReadC
+{
+private:
+  ActionC Action;
+  LightC Light;
+
+public:
+  void CalibrationStatus()
+  {
+    db_system2 = 0;
+    db_gyro = 0;
+    db_accel = 0;
+    db_mag = 0;
+    bno.getCalibration(&db_system2, &db_gyro, &db_accel, &db_mag);
+    if (db_gyro == 0)
+    {
+      Light.RGB(255, 0, 0, 0);
+    } // rot
+    else if (db_gyro == 1)
+    {
+      Light.RGB(255, 0, 50, 0);
+    } // orange
+    else if (db_gyro == 2)
+    {
+      Light.RGB(255, 0, 255, 0);
+    } // gelb
+    else if (db_gyro == 3)
+    {
+      Light.RGB(50, 0, 255, 0);
+    } // grün
+    if (db_mag == 0)
+    {
+      Light.RGB(255, 0, 0, 1);
+    }
+    else if (db_mag == 1)
+    {
+      Light.RGB(255, 0, 50, 1);
+    }
+    else if (db_mag == 2)
+    {
+      Light.RGB(255, 0, 255, 1);
+    }
+    else if (db_mag == 3)
+    {
+      Light.RGB(0, 0, 255, 1);
+    } // grün
+  }
+
+  void Button()
+  {
+    Wire.beginTransmission(0x20); // address first port expander
+    Wire.write(0x00);             // select input register
+    Wire.endTransmission(false);  // send repeated start instead of stop
+    Wire.requestFrom(0x20, 1);    // Start a read access and expect one byte
+    db_Switches = Wire.read();    // read inputs
+    Wire.endTransmission();       // now send a stop
+
+    for (int i = 2; i < 8; i++)
+    {
+      byte Switches_new = db_Switches;
+      byte Swi_byte = Switches_new >> i;
+      int Swi_byte_new = Swi_byte;
+      if (i > 4)
+      {
+        if (Swi_byte_new % 2 == 0)
+        {
+          db_SW[i - 2] = 0;
+        }
+        else
+        {
+          db_SW[i - 2] = 1;
+        }
+      }
+      else
+      {
+        if (Swi_byte_new % 2 == 0)
+        {
+          db_SW[i - 2] = 1;
+        }
+        else
+        {
+          db_SW[i - 2] = 0;
+        }
+      }
+    }
+    db_SW[6] = digitalRead(3);
+
+    if (db_SW[5] == true)
+    {
+      db_Switch1 = 1;
+    }
+    else if (db_SW[5] == false)
+    {
+      db_Switch1 = 0;
+    }
+    if (db_SW[4] == true)
+    {
+      db_Switch2 = 1;
+    }
+    else if (db_SW[4] == false)
+    {
+      db_Switch2 = 0;
+    }
+    if (db_SW[3] == true)
+    {
+      db_Switch3 = 1;
+    }
+    else if (db_SW[3] == false)
+    {
+      db_Switch3 = 0;
+    }
+  }
+
+  void IR()
+  {
+
+    // IR db_befehls Katalog
+    db_list1[0] = 2048;
+    db_list1[1] = 4096;
+    db_list1[2] = 6144;
+    db_list1[3] = 8192;
+    db_list1[4] = 10240;
+    db_list1[5] = 12288;
+    db_list1[6] = 14336;
+    db_list1[7] = 16384;
+    // Sensoren abfragen
+    SPI.beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE3)); // Start SPI und Einstellern der Übertragungsparameter
+    digitalWrite(10, LOW);
+    if (db_IR_Cal == false)
+    {
+      for (int i = 0; i < 8; i++)
+      {
+        db_IR_Val[i] = SPI.transfer16(db_list1[i]); // Ausgabewert: RAW
+      }
+    }
+    else
+    {
+      for (int i = 0; i < 8; i++)
+      {
+        db_IR_Val[i] = (SPI.transfer16(db_list1[i]) * 100) / db_IR_Max[i]; // Ausgabewert: ca. 0-100
+      }
+      db_IR_Val[3] = db_IR_Val[3] - 20;
+    }
+    digitalWrite(10, HIGH);
+    SPI.endTransaction();
+  }
+
+  float Quat_Vector()
+  {
+    imu::Quaternion quat = bno.getQuat();
+    return quat.x() * 100;
+  }
+
+  float Acceleration()
+  {
+    imu::Vector<3> gyro = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
+    return gyro.x();
+  }
+
+  int alround_Compass()
+  {
+    sensors_event_t event;
+    bno.getEvent(&event);
+    db_G_Dir = round(event.orientation.x);
+
+    db_G_Dir = db_G_Dir - db_Comp_Offset;
+    if (db_G_Dir < 0)
+    {
+      db_G_Dir = db_G_Dir + 360;
+    }
+    else if (db_G_Dir > 359)
+    {
+      db_G_Dir = db_G_Dir - 360;
+    }
+
+    if (db_G_Dir <= 180)
+    {
+      db_G_Dir = db_G_Dir;
+    }
+    else if (db_G_Dir > 180)
+    {
+      db_G_Dir = db_G_Dir - 360;
+    }
+    if (db_G_Dir < -180)
+    {
+      db_G_Dir = db_G_Dir + 360;
+    }
+    else if (db_G_Dir > 359)
+    {
+      db_G_Dir = db_G_Dir - 360;
+    }
+
+    return db_G_Dir;
+  }
+
+  float euler_Vector()
+  {
+    float db_euler_vek;
+    imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+    db_euler_vek = euler.x();
+    db_euler_vek = db_euler_vek - db_Comp_Offset;
+    if (db_euler_vek < 0)
+    {
+      db_euler_vek = db_euler_vek + 360;
+    }
+    else if (db_euler_vek > 359)
+    {
+      db_euler_vek = db_euler_vek - 360;
+    }
+    if (db_euler_vek <= 180)
+    {
+      db_euler_vek = db_euler_vek;
+    }
+    else if (db_euler_vek > 180)
+    {
+      db_euler_vek = db_euler_vek - 360;
+    }
+    if (db_euler_vek < -180)
+    {
+      db_euler_vek = db_euler_vek + 360;
+    }
+    else if (db_euler_vek > 359)
+    {
+      db_euler_vek = db_euler_vek - 360;
+    }
+    return db_euler_vek;
+  }
+
+  void Compass()
+  {
+
+    db_Orbit_Dir = alround_Compass();
+    // db_Orbit_Dir = euler_Vector();
+    // db_Orbit_Dir = Acceleration();
+
+    if (db_Orbit_Dir <= 0)
+    {
+      Light.RGB(0, 255 - (db_Orbit_Dir * 1.41), (db_Orbit_Dir * 1.41), 8);
+    }
+    else if (db_Orbit_Dir > 0)
+    {
+      Light.RGB((db_Orbit_Dir * 1.41), 0, 255 - (db_Orbit_Dir * 1.41), 8);
+    }
+
+    if (db_Orbit_Dir < 2 && db_Orbit_Dir > -2)
+    {
+      digitalWrite(23, LOW);
+    }
+    else
+    {
+      digitalWrite(23, HIGH);
+    }
+  }
+};
+
+/** Highlevel Code  ********************************************************************************/
+class TacktiksC
+{
+private:
+  ReadC Read;
+  ActionC Action;
+
+public:
+  void TorAnfahrt()
+  { // wenn SchussEN == false --> Schuss
+    Action.Movement(0, db_MainSpeed, 0);
+  }
+
+  void BallAnfahrt()
+  {
+    Action.Movement((db_Ball_dir_calc * 1.3), db_MainSpeed, 0);
+  }
+};
+
+/** Main Code  ********************************************************************************/
+class MainC
+{
+private:
+  ReadC Read;
+  ActionC Action;
+  CalculateC Calculate;
+  TacktiksC Tacktiks;
+
+public:
+  void Game()
+  {
+    if (db_LDR_Aktive == false)
+    {
+      Tacktiks.BallAnfahrt();
+    }
+    else
+    {
+      Tacktiks.TorAnfahrt();
+    }
+  }
+
+  void System()
+  {
+    noInterrupts();
+    db_Timing_Numbercopy = db_Timing_Number;
+    interrupts();
+
+#ifdef db_XCP_BL
+    xcpMaster_bl.BackgroudTask();
+#endif
+#ifdef db_XCP_USB
+    xcpMaster_usb.BackgroudTask();
+#endif
+
+    if (db_Timing_Memory != db_Timing_Numbercopy)
+    { // Timing_Memory!=Timing_Numbercopy
+
+      Update(); // ReadSensors
+
+      if (db_Switch3 == 0)
+        db_MainSpeed = db_LOW_Speed; // Speedboost OFF
+      else
+        db_MainSpeed = db_HIGH_Speed; // Speedboost ON
+
+      if (db_SW[0] == true)
+        Action.Schuss(); // Schusstest
+
+      if (db_SW[2] == true)
+        db_Comp_Offset = (Action.Calibrate()); // Comp Reset
+
+      if (db_SW[6] == false)
+      { // Game Schleifen Programm
+        if (db_Switch2 == 0)
+          Action.Movement(0, 100, 0);
+        else
+          Game(); 
+      }
+
+      else
+      { // Start_Schleifen Programm
+        Action.Stop();
+      }
+    }
+    db_Timing_Memory = db_Timing_Numbercopy;
+  }
+
+  void Update()
+  {
+    Read.IR();
+    Read.Button();
+    Read.CalibrationStatus();
+    Read.Compass();
+    Calculate.LDR();
+    Calculate.Ball_Position();
+    Calculate.Ball_Anfahrt();
+    db_gyro_comp = Read.Acceleration();
+    db_comp_comp = Read.alround_Compass();
+    db_euler_comp = Read.euler_Vector();
+
+#ifdef db_XCP_BL
+    xcpMaster_bl.Event(0);
+#endif
+#ifdef db_XCP_USB
+    xcpMaster_usb.Event(0);
+#endif
+  }
+
+  void Setup()
+  {
+
+    db_sqrt3 = sqrt(3);
+
+    pinMode(1, OUTPUT);
+    pinMode(2, OUTPUT);
+    pinMode(3, INPUT);
+    pinMode(4, OUTPUT);
+    pinMode(5, OUTPUT);
+    pinMode(6, OUTPUT);
+    pinMode(7, OUTPUT);
+    pinMode(9, OUTPUT);
+    pinMode(10, OUTPUT);
+    pinMode(23, OUTPUT);
+    pinMode(21, INPUT); // L-Schranke
+
+    // Setup of the Expander
+    Wire.begin();
+    Wire.beginTransmission(0x20);
+    Wire.write(0x03);
+    Wire.write(0xFC);
+    Wire.endTransmission();
+    Wire.beginTransmission(0x20);
+    Wire.write(0x01);
+    Wire.write(0x00);
+    Wire.endTransmission();
+    Wire.begin();
+    Wire.beginTransmission(0x21);
+    Wire.write(0x01);
+    Wire.write(0x00);
+    Wire.endTransmission();
+    Wire.beginTransmission(0x21);
+    Wire.write(0x03);
+    Wire.write(0x00);
+    Wire.endTransmission();
+
+    bno.begin();
+    bno.setExtCrystalUse(true);
+
+    /* pin 10-13 SPI with ADC chip select*/
+    SPI.begin();
+
+    digitalWrite(1, HIGH);
+    digitalWrite(7, HIGH);
+    digitalWrite(10, HIGH);
+    digitalWrite(23, HIGH);
+
+    // pin 2: Display backlight PWM
+    analogWriteFrequency(2, 100);
+    analogWrite(2, 255);
+
+    RGB_LEDs.begin();
+    delay(10);
+    RGB_LEDs.setBrightness(0);
+    RGB_LEDs.show();
+
+    analogWriteFrequency(4, db_Motor_Freqency);
+    analogWriteFrequency(5, db_Motor_Freqency);
+    analogWriteFrequency(6, db_Motor_Freqency);
+    analogWriteFrequency(9, db_Motor_Freqency);
+
+#ifdef db_XCP_BL
+    xcpMaster_bl.Init();
+#endif
+#ifdef db_XCP_USB
+    xcpMaster_usb.Init();
+#endif
+  }
+};
+
+/** Arduino Setup  ********************************************************************************/
+MainC Main_class;
+void Timing_Counter() { db_Timing_Number++; }
+void setup()
+{
+  Main_class.Setup();
+  myTimer.begin(Timing_Counter, db_ProgrammSpeed * 1000);
+}
+void loop() { Main_class.System(); }

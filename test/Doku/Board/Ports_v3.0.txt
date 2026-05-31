@@ -1,0 +1,28 @@
+/** Port Belegung v3.0 ********************************************************************/
+// Pin       Funktion          Verfahren      Angeschlossen
+//----------------------------------------------------------------------------------------//
+// 0         DISPLAY_IRQ      Interrupt      Display
+// 1         DISPLAY_RT_CS    GPIO           Display (Touch)
+// 2         DISPLAY_LITE     PWM/GPIO       Display (Beleuchtung)
+// 3         START_SWITCH     GPIO           Schalter
+// 4         PWM0             PWM            Motor0
+// 5         PWM1             PWM            Motor1
+// 6         PWM2             PWM            Motor2
+// 7         DISPLAY_TFT_CS   GPIO?          Display
+// 8         DISPLAY_TFT_DC   ??             Display
+// 9         PWM3             PWM            Motor3 ???
+// 10        ADC_CS           SPI/GPIO       IR-S.-ADC
+// 11        MOSI             SPI            IR-S.-ADC, Display, Touch
+// 12        MISO             SPI            "
+// 13        SCK              SPI            "
+// 14        TNS_TX/PIXY_RX   ??             Kamera
+// 15        TNS_RX/PIXY_TX   ??             Kamera
+// 16        TNS_RX/DEBUG_TX  ??             Debugstecker
+// 17        TNS_TX/DEBUG_RX  ??             Debugstecker
+// 18        SDA_3V3          I2C            Portexpander(20,21),J7(??),BN0055/Kompass,J6/Ultraschall(??),
+// 19        SCL_3V3          I2C            "
+// 20        RGB_DATA_3V3     GPIO?          RGB LEDs (10xWS2812B, J8)
+// 21        LIGHT_BARRIER    GPIO?          Lichtschranke
+// 22        BAT_VOLTAGE      ADC            Batteriespannung
+// 23        LED0             GPIO           LED?
+//----------------------------------------------------------------------------------------//

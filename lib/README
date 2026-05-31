@@ -1,0 +1,28 @@
+
+# Bibliotheken - Karl-Gustav III
+
+Dieses Verzeichnis enthält projektspezifische Bibliotheken für den Karl-Gustav III Roboter.
+
+## Verfügbare Bibliotheken
+
+### Bot/
+Hauptkomponente des Roboters mit folgenden Untermodulen:
+- **Data/**: Globale Variablen und Parameter
+- **executiveLayer/**: Aktion und Lese-Funktionen
+
+### BotSimulation/
+Simulationssoftware für die Robotersteuerung und Tests.
+
+### IR/ und IR_Lib/
+Infrarot-Sensor-Bibliotheken zur Ballerkennung und Richtungsbestimmung:
+- IR.cpp/IR.h: Hauptimplementierung
+- IR_ring.cpp/IR_ring.h: IR-Ring-Hardware-Interface
+- bus-interface/: I2C- und Bus-Schnittstellen
+
+## Kompilierung
+
+PlatformIO kompiliert diese Biblioteken automatisch zu statischen Bibliotheken und linked sie in die ausführbare Datei.
+
+## Weitere Informationen
+
+- [PlatformIO Library Dependency Finder](https://docs.platformio.org/page/librarymanager/ldf.html)

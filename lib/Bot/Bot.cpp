@@ -1,0 +1,1 @@
+#define BOT_CPP

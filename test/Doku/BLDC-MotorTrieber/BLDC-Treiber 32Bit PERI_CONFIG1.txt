@@ -1,0 +1,76 @@
+32 Bit PERI_CONFIG1
+
+31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00
+0  1  0  0  0  0  0  0  0  0  0  EDIT  0  0  0  0  0  0  0  0  0  0/10  0  0  0  0  0  0  0  0
+
+Hex:
+bei std 9 = 0:
+im UZS: 01000000000010000000000000000000 Hex: 0x40080000
+ge UZS: 01000000000100000000000000000000 Hex: 0x40100000
+
+bei std 9 = 1:
+im UZS: 01000000000010000000001000000000 Hex: 0x40080200
+ge UZS: 01000000000100000000001000000000 Hex: 0x40100200
+
+
+Beschreibung:
+31 RESERVED 0h
+30 SPREAD_SPECTRUM_MODULATION_DIS 1h
+	0h = SSM is Enabled 
+	1h = SSM is Disabled 
+29-26 RESERVED 0h 
+25-22 BUS_CURRENT_LIMIT 0h
+	0h = 0.125 A 
+	1h = 0.25 A 
+	2h = 0.5 A 
+	3h = 1.0 A 
+	4h = 1.5 A 
+	5h = 2.0 A 
+	6h = 2.5 A 
+	7h = 3.0 A 
+	8h = 3.5 A 
+	9h = 4.0 A 
+	Ah = 4.5 A 
+	Bh = 5.0 A 
+	Ch = 5.5 A 
+	Dh = 6.0 A 
+	Eh = 7.0 A 
+	Fh = 8.0 A 
+21 BUS_CURRENT_LIMIT_ENABLE 0h
+	0h = Disable 
+	1h = Enable 
+#### 20-19 DIR_INPUT EDIT :
+	0h = Hardware Pin DIR 
+	1h = Override DIR pin with clockwise rotation OUTA-OUTB-OUTC 
+	2h = Override DIR pin with counter clockwise rotation OUTA-OUTC-OUTB 
+	3h = Hardware Pin DIR 
+18 DIR_CHANGE_MODE 0h Response to change of DIR pin status
+	0h = Follow motor stop options and ISD routine on detecting DIR change 
+	1h = Change the direction through Reverse Drive while continuously driving the motor 
+17 SELF_TEST_ENABLE R/W 0h Enables self-test on power up
+	0h = STL is disabled 
+	1h = STL is enabled 
+16-13 ACTIVE_BRAKE_SPEED_DELTA_LIMIT_ENTRY R/W 0h 
+	Difference between final speed and present speed below which active braking will be applied
+	0h = Not Applicable 
+12-10 ACTIVE_BRAKE_MOD_INDEX_LIMIT 0h 
+	Modulation Index limit below which active braking will be applied
+	0h = 0% 
+9 SPEED_RANGE_SEL 0h ?
+	Frequency range selection for PWM/duty based motor control input
+	0h = 325Hz to 100kHz 
+	1h = 10Hz to 325Hz 
+8-0 RESERVED 0h 
+
+
+Meine Beschreibung:
+31-22 Nicht anfassen
+21 auf null dann ist auch 25-22 egal
+20-19 WICHTIG -> Richtung 01 ist im Uhrzeiger sinn 10 dagegen
+18-10 nicht anfassen 
+9 entsprechend der Teensy PWM Frequenz anpassen
+8-0 nicht anfassen
+
+
+Nachlesen:
+https://www.ti.com/lit/ds/symlink/mcf8316c-q1.pdf?ts=1767523456687&ref_url=https%253A%252F%252Fwww.ti.com%252Fproduct%252FMCF8316C-Q1

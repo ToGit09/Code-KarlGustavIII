@@ -1,0 +1,24 @@
+
+# Header-Dateien - Karl-Gustav III
+
+Dieses Verzeichnis enthält Header-Dateien (`.h`) für das Karl-Gustav III Roboterprojekt.
+
+## Struktur
+
+Header-Dateien werden in C/C++ verwendet, um Funktionsdeklarationen, Makros und Typdefinitionen zu deklarieren, die über mehrere Quelldateien hinweg genutzt werden.
+
+## Verwendung
+
+Header-Dateien werden im Quellcode mit der `#include`-Direktive eingebunden:
+
+```cpp
+#include "header.h"
+```
+
+## Konventionen
+
+- Header-Dateien enden mit `.h`
+- Include Guards verwenden, um mehrfaches Einbinden zu verhindern
+- Deklarationen, nicht Implementierungen, in Header-Dateien platzieren
+
+Mehr Informationen: https://gcc.gnu.org/onlinedocs/cpp/Header-Files.html

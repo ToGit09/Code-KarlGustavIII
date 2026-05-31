@@ -1,0 +1,400 @@
+// Alles was sich Bewegt
+// @todo PID Regler überarbeiten
+class Codeaction
+{
+private:
+    /* Unnötoige Funktionen
+        // Alle Motoren setzen
+        // @param motor1: Motor 1 Geschwindigkeit (-100 bis 100)
+        // @param motor2: Motor 2 Geschwindigkeit (-100 bis 100)
+        // @param motor3: Motor 3 Geschwindigkeit (-100 bis 100)
+        // @param dribbler: Dribbler an/aus
+        void setMotors(int motor1, int motor2, int motor3, bool dribbler)
+        {
+            uint16_t speeds[4] =
+                {
+                    (uint16_t)abs(motor1 * 256 / 100),
+                    (uint16_t)abs(motor2 * 256 / 100),
+                    (uint16_t)abs(motor3 * 256 / 100),
+                    (uint16_t)abs(DribbleSpeed * 256 / 100)// Dribbler immer volle Geschwindigkeit
+                };
+
+            bool dirs[4] =
+                {
+                    motor1 >= 0,
+                    motor2 >= 0,
+                    motor3 >= 0,
+                    Dribbler_dir // Dribbler Richtung
+                };
+
+            // Dribbler setzen
+            if (!dribbler) // Wenn dribbler aus Speed auf 0 setzen
+                speeds[3] = 0;
+
+            // Ports setzen
+            uint8_t ports = 0x00; // ports variable initialisieren
+            // ports = 0x00 = b00 00 00 00
+
+            for (int i = 0; i < 4; i++)
+            {
+                analogWrite(MotorPorts[i], speeds[i]);
+                if (dirs[i]) // vorwärts
+                {
+  ports |= (0x01 << (i * 2)); // setze die entsprechenden Bits auf 0 1 0x01 = b00 00 00 01
+}
+else // rückwärts
+{
+
+  0x02 => b00 00 00 10
+  0x02 << 0 = 0000 0010  (2 dezimal)
+  0x02 << 2 = 0000 1000  (8 dezimal)
+  0x02 << 4 = 0010 0000  (32 dezimal)
+  odern schreibt nur in die entsprechenden Bits
+
+   ports |= (0x02 << (i * 2)); // setze die entsprechenden Bits auf 1 0 0x02 = b00 00 00 10
+}
+
+if (speeds[i] == 0)
+{
+
+   0x03 => b00 00 00 11
+   0x03 << (i * 2) verschiebt die Bits entsprechend
+   ~(0x03 << (i * 2)) => negiert die Bits (zB b00 00 00 11 wird zu b11 11 11 00)
+   das unden setzt die entsprechenden Bits auf 00 (zb b00 10 01 11 wird zu b00 10 00 11 wenn i = 1 ist)
+
+
+   ports &= ~(0x03 << (i * 2));
+}
+}
+
+Wire.beginTransmission(MOTOR_PORT_EXPANDER_ADDRESS); // address Motor port expander
+Wire.write(0x01);                                    // select output register
+Wire.write(ports);                                   // update output ports
+Wire.endTransmission();
+}
+
+// Setzt einen Motor
+// @param i: Motor Index (0 = hinten, 1 = links, 2 = rechts, 3 = Dribbler)
+// @param dir: Richtung (0: Freilauf, 1: Rechts, 2: Links, 3: Bremsen)
+// @param speed: Geschwindigkeit (0-100)
+// @note Nicht mehr in Gebruach (langsam)
+void setMotor(int i, int dir, int speed)
+{
+uint8_t ports;
+// get current port state (slow but simple)
+Wire.beginTransmission(0x21); // address second port expander
+Wire.write(0x01);             // select output register
+Wire.endTransmission(false);  // send restart instead of stop
+Wire.requestFrom(0x21, 1);    // Start a read access and expect one byte
+ports = Wire.read();          // get current port state
+Wire.endTransmission();
+
+switch (i)
+{
+case 0:
+analogWrite(4, (uint16_t)speed * 256 / 100);
+ports = (ports & 0xFC) | ((dir & 0x03) << 0);
+break;
+case 1:
+analogWrite(5, (uint16_t)speed * 256 / 100);
+ports = (ports & 0xF3) | ((dir & 0x03) << 2);
+break;
+case 2:
+analogWrite(6, (uint16_t)speed * 256 / 100);
+ports = (ports & 0xCF) | ((dir & 0x03) << 4);
+break;
+case 3:
+analogWrite(9, (uint16_t)speed * 256 / 100);
+ports = (ports & 0x3F) | ((dir & 0x03) << 6);
+break;
+}
+
+Wire.beginTransmission(0x21); // address second port expander
+Wire.write(0x01);             // select output register
+Wire.write(ports);            // update output ports
+Wire.endTransmission();
+}
+
+// Setzt einen Motor
+// @param motpr: Motor Index (0 = hinten, 1 = links, 2 = rechts, 3 = Dribbler)
+// @param dir: Richtung (0: Freilauf, 1: Rechts, 2: Links, 3: Bremsen)
+// @param speed: Geschwindigkeit (0-100)
+// @note Nicht mehr in Gebruach (langsam)
+void setMotorSpeed(int motor, bool dir, int speed)
+{
+bool Richtung = dir;
+Wire.beginTransmission(0x21); // address second port expander
+Wire.write(0x01);             // select output register
+Wire.endTransmission(false);  // send restart instead of stop
+Wire.requestFrom(0x21, 1);    // Start a read access and expect one byte
+// uint8_t ports = Wire.read();  // get current port state
+Wire.endTransmission();
+
+if (((motor == 0) && (Richtung == true)) || (currentMotorstates[0] == 1))
+{
+newMotorstates[0] = B00000001;
+currentMotorstates[0] = 1;
+}
+if (((motor == 0) && (Richtung == false)) || (currentMotorstates[0] == 2))
+{
+newMotorstates[0] = B00000010;
+currentMotorstates[0] = 2;
+}
+
+if (((motor == 1) && (Richtung == true)) || (currentMotorstates[1] == 1))
+{
+newMotorstates[1] = B00000100;
+currentMotorstates[1] = 1;
+}
+if (((motor == 1) && (Richtung == false)) || (currentMotorstates[1] == 2))
+{
+newMotorstates[1] = B00001000;
+currentMotorstates[1] = 2;
+}
+
+if (((motor == 2) && (Richtung == true)) || (currentMotorstates[2] == 1))
+{
+newMotorstates[2] = B00010000;
+currentMotorstates[2] = 1;
+}
+if (((motor == 2) && (Richtung == false)) || (currentMotorstates[2] == 2))
+{
+newMotorstates[2] = B00100000;
+currentMotorstates[2] = 2;
+}
+
+if (((motor == 3) && (Richtung == true)) || (currentMotorstates[3] == 1))
+{
+newMotorstates[3] = B01000000;
+currentMotorstates[3] = 1;
+}
+if (((motor == 3) && (Richtung == false)) || (currentMotorstates[3] == 2))
+{
+newMotorstates[3] = B10000000;
+currentMotorstates[3] = 2;
+}
+
+analogWrite(MotorPorts[motor], (uint16_t)speed * 256 / 100);
+
+byte Output = newMotorstates[0] | newMotorstates[1] | newMotorstates[2] | newMotorstates[3];
+Wire.beginTransmission(0x21); // address second port expander
+Wire.write(0x01);             // select output register
+Wire.write(Output);           // update output ports Port_Seting
+Wire.endTransmission();
+}
+
+// Stoppt einen Motor
+// @param motor: Motor Index (0 = hinten, 1 = links, 2 = rechts, 3 = Dribbler)
+// @note Nicht mehr in Gebruach (langsam)
+void brakeMotor(int motor)
+{
+Wire.beginTransmission(0x21); // address second port expander
+Wire.write(0x01);             // select output register
+Wire.endTransmission(false);  // send restart instead of stop
+Wire.requestFrom(0x21, 1);    // Start a read access and expect one byte
+// uint8_t ports = Wire.read();  // get current port state
+Wire.endTransmission();
+
+if ((motor == 0) || (currentMotorstates[0] == 0))
+{
+newMotorstates[0] = B00000011;
+currentMotorstates[0] = 0;
+}
+if ((motor == 1) || (currentMotorstates[1] == 0))
+{
+newMotorstates[1] = B00001100;
+currentMotorstates[1] = 0;
+}
+if ((motor == 2) || (currentMotorstates[2] == 0))
+{
+newMotorstates[2] = B00110000;
+currentMotorstates[2] = 0;
+}
+if ((motor == 3) || (currentMotorstates[3] == 0))
+{
+newMotorstates[3] = B11000000;
+currentMotorstates[3] = 0;
+}
+
+analogWrite(MotorPorts[motor], 0);
+
+byte Output = newMotorstates[0] | newMotorstates[1] | newMotorstates[2] | newMotorstates[3];
+Wire.beginTransmission(0x21); // address second port expander
+Wire.write(0x01);             // select output register
+Wire.write(Output);           // update output ports Port_Seting
+Wire.endTransmission();
+}
+
+*/
+public:
+    // PID Regler berechnen
+    // ausgenommen von rT Regel da unabhängig vom Mainloop
+    float calculatePID(compass_sensor_event compass, movement_event movement)
+    {
+        float PIDKorrektur = compass.orbitDirection - movement.AngleOfAttack; // Abweichung berechnen
+
+        PID_I = PID_I + PIDKorrektur;
+
+        if (PIDKorrektur > -(PID_I_threshhold) && PIDKorrektur < PID_I_threshhold) // wenn I gegen null geht auf 0 setzen
+            PID_I = 0;
+
+        if (PID_I > PIDpa_IlimitMax) // I nach oben begrenzen
+            PID_I = PIDpa_IlimitMax;
+        else if (PID_I < PIDpa_IlimitMin) // I nach unten begrenzen
+            PID_I = PIDpa_IlimitMin;
+
+        PID_P = PIDKorrektur * PID_P_Multiplier; // Berechnung P wert
+
+        PID_I = PID_I * PID_I_Multiplier; // Berechnung I wert
+
+        PID_D = (PIDKorrektur - PIDKorrektur_memory) * PID_D_Multiplier; // Berechnung D wert
+
+        float internPID = PID_P + PID_I + PID_D; // PID Wert berechnen
+        PIDKorrektur_memory = PIDKorrektur;      // PIDKorrektur speichern für D wert
+        return internPID;
+    }
+
+    // Movement Funktion für Omnidirektionale Bewegung
+    // @param angle: Winkel in Grad (-180-180)
+    // @param speed: Geschwindigkeit (0-100)
+    // @param aoa: Anstellwinkel (-180-180)
+    void move(movement_event event, float myPID)
+    {
+        // Winkel in x und y Bewegung umrechnen
+        float angleRad = event.angle * PI / 180; // Winkel in Radiant umrechnen
+        float x = cosf(angleRad) * event.speed;  // x Bewegung
+        float y = sinf(angleRad) * event.speed;  // y Bewegung
+
+        // PID Regler berechnen
+        // angleOfAttack = event.AngleOfAttack; // Anstellwinkel fallt raus da ganzes movement event an PID übergeben wird
+        float turn = myPID * PID_Multiplikator;
+
+        // Movement berechnen
+        int Motor0 = (int)(x + turn);                            // Motor 0
+        int Motor1 = (int)((-0.5 * x) - (sqrt3 / 2 + y) + turn); // Motor 1
+        int Motor2 = (int)((-0.5 * x) + (sqrt3 / 2 + y) + turn); // Motor 2
+
+        // Standbewegung
+        if (event.speed == 0)
+        {
+            Motor0 = (turn + PID_Stand_Speed);
+            Motor1 = (turn + PID_Stand_Speed);
+            Motor2 = (turn + PID_Stand_Speed);
+            event.speed = PID_Stand_Speed;
+
+            // alt
+            // Motor0 = (turn * PID_Stand_Multiplier);
+            // Motor1 = (turn * PID_Stand_Multiplier);
+            // Motor2 = (turn * PID_Stand_Multiplier);
+        }
+
+        // Richtungen bercehnen
+        // int dir0 = Motor0 > 0 ? 1 : 2;
+        // int dir1 = Motor1 > 0 ? 1 : 2;
+        // int dir2 = Motor2 > 0 ? 1 : 2;
+
+        // Mapping
+        float mapping = 1;
+
+        if (Motor0 > Motor1 && Motor0 > Motor2)
+            mapping = event.speed / abs(Motor0);
+        else if (Motor1 > Motor0 && Motor1 > Motor2)
+            mapping = event.speed / abs(Motor1);
+        else
+            mapping = event.speed / abs(Motor2);
+
+        Motor0 = Motor0 * mapping;
+        Motor1 = Motor1 * mapping;
+        Motor2 = Motor2 * mapping;
+
+        // Motoren setzen
+        setMotors(Motor0, Motor1, Motor2, DribblerState);
+        return;
+
+        // Motoren setzen alt
+        // setMotorSpeed(0, dir0, abs(Motor0));
+        // setMotorSpeed(1, dir1, abs(Motor1));
+        // setMotorSpeed(2, dir2, abs(Motor2));
+    }
+
+    // Setzt alle Motoren
+    // @param Motor1: Geschwindigkeit Motor 1
+    // @param Motor2: Geschwindigkeit Motor 2
+    // @param Motor3: Geschwindigkeit Motor 3
+    // @param Dribbleran: Dribbler an/aus
+    void setMotors(int Motor1, int Motor2, int Motor3, bool Dribbleran)
+    {
+        uint16_t speeds[4] =
+            {
+                (uint16_t)abs(Motor1 * 256 / 100),
+                (uint16_t)abs(Motor2 * 256 / 100),
+                (uint16_t)abs(Motor3 * 256 / 100),
+                (uint16_t)abs(DribbleSpeed * 256 / 100) // Dribbler immer volle Geschwindigkeit
+            };
+
+        if (!Dribbleran)
+        {
+            speeds[3] = 0;
+        }
+
+        for (int i = 0; i < 4; i++)
+        {
+            if (speeds[i] == 0)
+            {
+                analogWrite(MotorPWMPorts[i], 0);
+                digitalWrite(MotorIN1Ports[i], LOW);
+                digitalWrite(MotorIN2Ports[i], LOW);
+            }
+
+            if (speeds[i] > 0) // Motor rechts rum
+            {
+                analogWrite(MotorPWMPorts[i], speeds[i]);
+                digitalWrite(MotorIN1Ports[i], HIGH);
+                digitalWrite(MotorIN2Ports[i], LOW);
+            }
+
+            if (speeds[i] < 0) // Motor links rum
+            {
+                analogWrite(MotorPWMPorts[i], abs(speeds[i]));
+                digitalWrite(MotorIN1Ports[i], LOW);
+                digitalWrite(MotorIN2Ports[i], HIGH);
+            }
+        }
+    }
+
+    // Alle Motoren(FAHREN) stoppen
+    void brake(void)
+    {
+        setMotors(0, 0, 0, DribblerState);
+    }
+
+    // Den Dribbler bedienen
+    // @param an: Dribbler an/aus
+    // @param dir: Dribbler Richtung (true : ball anziehen, false : ball abstoßen) (wird ignoriert)
+    // @note Dribbler wird NICHT direkt gesetzt -> ERST wenn die Motoren gesetzt werden
+    // @note dir wird ignoriert
+    void dribbler(bool an, bool dir)
+    {
+        DribblerState = an;
+        // Dribbler_dir = dir; // wird ignoriert -> nicht auskommentieren und eventuell dir invertieren
+    }
+
+    // lädt den kicker auf
+    void kicker_reset(void)
+    {
+        if (KickerTimer > KickerExtendTime) // Zeit die der Kicker an ist
+        {
+            digitalWrite(KICKER_PORT, LOW);
+        }
+    }
+
+    // Schießt den Ball
+    void kick(void)
+    {
+        if (KickerTimer > KickerExtendTime + KickerCooldown) // Zeit die der Kicker zum Abkühlen hat
+        {
+            digitalWrite(KICKER_PORT, HIGH);
+            KickerTimer = 0;
+        }
+    }
+};

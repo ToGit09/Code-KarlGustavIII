@@ -1,0 +1,92 @@
+
+// 21.2.26
+
+
+ir_sensor_event CodeCalculate::IR_Calc(ir_sensor_event ir, compass_sensor_event compass, us_sensor_event us)
+{
+    int moveDirToBall = ir.Orbit_direction * -1; // direkt auf ball fahren
+    int angleToMoveAroundBall = -90;
+
+    // Distance > 30 Am ROboter 
+    // Distance < 30 Weiter weg
+    // Distance < 35 guter threshhold
+    // Evtl Hysterese
+
+    if (ir.Orbit_direction < 0)
+        angleToMoveAroundBall = 90;
+
+    if (IR_Mode) // Tropfen
+    {
+        if (moveDirToBall > -90 && moveDirToBall < 90)
+            ir.ballanfahrt = moveDirToBall * IR_front_Drive_Faktor; // leichte Tropfenform unabhängig von Distanz
+        else
+        {
+            ir.ballanfahrt = moveDirToBall + (90 * ir.distance); // Direkt zum Ball fahren plus bis zu 90 Grad abhängig von der Distanz
+        }
+
+        return ir;
+    }
+    else // Kreis
+    {
+
+        if (ir.distance > IR_CircleR && (ir.direction < -15 || ir.direction > 15))      // Wenn der Ball innerhalb des Kreises liegt und nicht vor dem Roboter
+            ir.ballanfahrt = moveDirToBall + angleToMoveAroundBall;                     // um den Ball Kreisen
+        else if (ir.distance > IR_CircleR && (ir.direction > -10 && ir.direction < 10)) // Wenn im Kreis und vor dem roboter
+            ir.ballanfahrt = moveDirToBall * IR_front_Drive_Faktor;
+        else
+            ir.ballanfahrt = moveDirToBall; //* IR_front_Drive_Faktor; // leichte Tropfenform unabhängig von Distanz
+
+        // ir.ballanfahrt = moveDirToBall;
+    }
+
+    ir.ballanfahrt_neuW = 0;
+    ir.ballanfahrt_neuSF = 1;
+
+    { /* int schwellwert = 5;
+
+     if (ir.direction > 0)
+         schwellwert = 8;
+     else
+         schwellwert = 15;
+
+     if (ir.direction > 165 || ir.direction < -165)
+         ir.ballanfahrt_neuW = moveDirToBall + angleToMoveAroundBall;
+     else if (ir.direction > 40 || ir.direction < -40)
+         if (ir.distance > schwellwert)
+             ir.ballanfahrt_neuW = 180, ir.ballanfahrt_neuSF = 1.2;
+         else
+             ir.ballanfahrt_neuW = moveDirToBall * 1.4;
+     else if (ir.direction > 20 || ir.direction < -20)
+         ir.ballanfahrt_neuW = moveDirToBall * 1.4;
+     else if (ir.direction > 10 || ir.direction < -10)
+         ir.ballanfahrt_neuW = moveDirToBall * 1.4;
+     else
+         ir.ballanfahrt_neuW = moveDirToBall * 1.3; */
+    }
+
+    if (ir.Orbit_direction > 80 || ir.Orbit_direction < -80) // hinter dem Roboter
+    {
+        if (ir.distance < 10) // weit weg
+            ir.ballanfahrt_neuW = moveDirToBall * 1.2, ir.ballanfahrt_neuSF = 1.2;
+        else // nah dran
+            ir.ballanfahrt_neuW = moveDirToBall + angleToMoveAroundBall;
+    }
+    else if (ir.Orbit_direction > 45 || ir.Orbit_direction < -45) // vorne neben dem Roboter
+    {
+        if (ir.distance < 10)
+            ir.ballanfahrt_neuW = moveDirToBall * 1.4;
+        else
+        {
+            if (ir.Orbit_direction < 0)
+                ir.ballanfahrt_neuW = 110;
+            else
+                ir.ballanfahrt_neuW = -110;
+        }
+    }
+    else if (ir.Orbit_direction > 10 || ir.Orbit_direction < -10)
+        ir.ballanfahrt_neuW = moveDirToBall * 1.45;
+    else
+        ir.ballanfahrt_neuW = moveDirToBall * 1.1;
+
+    return ir;
+}

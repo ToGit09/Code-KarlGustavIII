@@ -1,0 +1,39 @@
+/** Port Belegung v3.5 ********************************************************************/
+// VEraltet
+// Pin       Funktion           Verfahren       Angeschlossen
+//----------------------------------------------------------------------------------------//
+// 0         TNS_RX/DEBUG_TX    UART            DEBUG
+// 1         TNS_TX/DEBUG_RX    UART            DEBUG
+// 2         PWM0               PWM             Motor0
+// 3         PWM1               PWM             Motor1
+// 4         PWM2               PWM             Motor2
+// 5         PWM3               PWM             Dribbler
+// 6         START_SWITCH       GPIO            Schalter
+// 7         TNS_RX/BLT_TX      UART            Bluetooth Modul
+// 8         TNS_TX/BLT_RX      UART            Bluetooth Modul
+// 9         ADC1_CS            GPIO            ADC1
+// 10        ADC2_CS            GPIO            ADC2
+// 11        MOSI               SPI             ADC1+2, Display
+// 12        MISO               SPI             ADC1+2, Display
+// 13        SCK                SPI             ADC1+2, Display
+// 14        TNS_TX/OPENMV1_RX  UART3           Kamera (OpenMV1)
+// 15        TNS_RX/OPENMV1_TX  UART3           Kamera (OpenMV1)
+// 16        TNS_TX/OPENMV2_RX  UART3           Kamera (OpenMV2)
+// 17        TNS_RX/OPENMV2_TX  UART3           Kamera (OpenMV2)
+// 18        SDA_3V3            I2C             Portexpander(0x20,0x21, 0x22(, 0x25)),BN0055
+// 19        SCL_3V3            I2C             Portexpander(0x20,0x21, 0x22(, 0x25)),BN0055
+// 20        TNS_TX/RCJ_RX      UART3           RCJ Kommunikation
+// 21        TNS_RX/RCJ_TX      UART3           RCJ Kommunikation
+// 22        DISPLAY_TFT_CS     GPIO            Display
+// 23        DISPLAY_RT_CS      GPIO            Display
+//
+// 24        LIGHT_BARRIER      I2C             Lichtschranke
+// 25        DISPLAY_IRQ        GPIO            Display
+// 26        KICKER             ?               Kicker Trigger
+// 27        KICKER_SW          ?               Kicker
+// 28        DISPLAY_TFT_DC     GPIO            Display
+// 29        RGB_DATA_3V3       I2C             RGB LEDs
+// 30        SPI_EXT_CS         GPIO            Externer IR Ring
+// 31        DISPLAY_SDCARD_CS  GPIO            Display
+// 32        SPI_EXT_CS         GPIO            Externer IR Ring
+// 33        DISPLAY_SDCARD_DET GPIO            Display

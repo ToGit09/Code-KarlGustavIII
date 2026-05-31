@@ -1,25 +1,13 @@
 # Karl-Gustav III v1.1.1 - Technische Dokumentation
 
-*Stand: 26.02.2026*
+*Letzte Aktualisierung: 26.02.2026*
 
-## 1. Ordnerstruktur
-
-Das Projekt ist wie folgt strukturiert:
-
-- `src/` - Enthält den Hauptquellcode des Roboters
-- `include/` - Header-Dateien und Definitionen für den Roboter
-- `lib/` - Externe Bibliotheken und wiederverwendbare Komponenten
-- `test/` - Enthält Testdateien und Dokumentation:
-  - `Doku/` - Technische Dokumentation und Anleitungen
-  - `snippets/` - Code-Snippets und Referenzimplementierungen
-  - `source/` - Quelldateien für Tests und Entwicklung
-
-## 2. Überblick Software
+## 1. Überblick
 Der Karl-Gustav III ist ein autonomer Roboterfußball-Roboter. Der Code steuert sämtliche Sensoren und Aktoren und implementiert verschiedene Spielstrategien.
 
-## 3. Mathematische Grundlagen
+## 2. Mathematische Grundlagen
 
-### 3.1 Omnidirektionale Bewegung
+### 2.1 Omnidirektionale Bewegung
 
 Die Bewegungssteuerung basiert auf einem dreieckigen Antriebssystem mit 120° Motoranordnung:
 
@@ -57,7 +45,7 @@ Die mathematische Herleitung:
 
 2. Die Projektion des Bewegungsvektors [x, y] auf diese Einheitsvektoren ergibt die Motorgeschwindigkeiten.
 
-### 3.2 IR-Ballortung
+### 2.2 IR-Ballortung
 
 Die Ballposition wird durch Vektoraddition der IR-Sensorwerte ermittelt:
 
@@ -97,7 +85,7 @@ Mathematische Schritte:
    - Ballrichtung = atan2(y_gesamt, x_gesamt)
    - Normalisierung auf -180° bis 180°
 
-### 3.3 PID-Regelung
+### 2.3 PID-Regelung
 
 Der PID-Regler für die Orientierungskontrolle:
 
@@ -147,7 +135,7 @@ Mathematische Details:
    - Dämpft Oszillationen
    - D_Multiplier typisch 15.0
 
-### 3.4 Ultraschall-Navigation
+### 2.4 Ultraschall-Navigation
 
 Die Positionsbestimmung verwendet trigonometrische Korrekturen:
 
@@ -174,9 +162,9 @@ Die Positionsberechnung berücksichtigt:
    - X-Offset: Mittelwert der seitlichen Differenz
    - Y-Offset: Mittelwert der vor/zurück Differenz
 
-## 4. Hauptklassen und ihre Funktionen
+## 3. Hauptklassen und ihre Funktionen
 
-### 4.1 CodeCalculate
+### 3.1 CodeCalculate
 Verarbeitet die Rohdaten der Sensoren:
 
 ```cpp
@@ -200,7 +188,7 @@ public:
 }
 ```
 
-### 4.2 CodeAction
+### 3.2 CodeAction
 Steuert die Bewegungen des Roboters:
 
 ```cpp
@@ -220,7 +208,7 @@ public:
 }
 ```
 
-### 4.3 CodeTactics
+### 3.3 CodeTactics
 Implementiert die Spielstrategien:
 
 ```cpp
@@ -255,7 +243,7 @@ public:
 }
 ```
 
-## 5. PID-Regelung
+## 4. PID-Regelung
 
 Die Orientierungsregelung erfolgt über einen PID-Regler:
 
@@ -277,7 +265,7 @@ void calculatePID(void) {
 }
 ```
 
-## 6. Hauptschleife
+## 5. Hauptschleife
 
 Der Roboter arbeitet in drei Hauptschleifen:
 
