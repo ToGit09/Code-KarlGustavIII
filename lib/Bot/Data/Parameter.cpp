@@ -61,7 +61,7 @@ long unsigned int LoopTiming = 4;       // Zeit in ms wann der Loop durchlaufen 
 long unsigned int LOP_TimerLimit = 8000; // maximale Zeit zwischen Ball erobert und Tor ohne außergewöhnlichen widerstand
 long unsigned int LOP_BackTime = 500;    // Zeit um nach hinten zu fahren
 long unsigned int LOP_FrontTime = 1100;  // Zeit um nach vorne zu fahren
-int KickerExtendTime = 18;               // Zeit die der Kicker ausgefahren ist
+int KickerExtendTime = 13;               // Zeit die der Kicker ausgefahren ist
 int KickerCooldown = 800;                // Zeit die der Kicker hat abzukühlen
 int DribbleSpeed = 10;
 
