@@ -541,7 +541,7 @@ public:
                 if (switches.BTN2)
                 {
                     Tactics.action.kick();
-                    delay(13);
+                    delay(KickerExtendTime);
                     digitalWrite(KICKER_PORT, LOW);
                 }
 
